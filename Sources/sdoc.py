@@ -17,8 +17,16 @@
 # TODO: Optimize by using a StringIO instead of concateating strings
 # TODO: Add a way to generate shorter HTML (1 char class names, shorter id and
 # js functions)
+# FIXME: There are problems with the Id, should store the object in a hash and
+# then associated a counter (will be more compact as well). Use the counter as
+# alpha
 
 import os, sys, types, string, fnmatch
+
+__version__ = "0.0.2"
+__doc__ = """\
+SDOc is a tool to generate a one-page interactive API documentation for the
+listed Python modules."""
 
 # ------------------------------------------------------------------------------
 #
@@ -201,7 +209,7 @@ class Documenter:
 		self._modules.append(module)
 		self.document(name, module, 0)
 		if self._modulesNavigation: self._modulesNavigation += " &bull; "
-		else: self._modulesNavigation = "APIs : "
+		else: self._modulesNavigation = "API : "
 		self._modulesNavigation += \
 		  "<a href='javascript:documentElement(\"%s\");'>%s</a>" \
 		  % (self.id(module), name)
@@ -276,12 +284,32 @@ class Documenter:
 #
 # ------------------------------------------------------------------------------
 
+OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
+OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
+def run( args ):
+	"""Runs SDoc as a command line tool"""
+	from optparse import OptionParser
+	# We create the parse and register the options
+	oparser = OptionParser(version="SDoc " + __version__)
+	oparser.add_option("-p", "--path", action="append", dest="pythonpath",
+		help=OPT_PYTHONPATH)
+	oparser.add_option("-a", "--accepts", action="append", dest="accepts",
+		help=OPT_ACCEPTS)
+	# We parse the options and arguments
+	options, args = oparser.parse_args(args=args)
+	documenter   = Documenter(options.accepts)
+	# We modify the sys.path
+	if options.pythonpath:
+		options.pythonpath.reverse()
+		for arg in options.pythonpath:
+			sys.path.insert(0, arg)
+	# And now document the module
+	for arg in args:
+		documenter.documentModule(arg)
+	# We eventually return the HTML file
+	return documenter.toHTML()
+
 if __name__ == "__main__":
-	documenter = Documenter(tuple(s + "*" for s in sys.argv[1:]))
-	modules    = ""
-	for module in sys.argv[1:]:
-		log("Documenting module " + module)
-		documenter.documentModule(module)
-	print documenter.toHTML()
+	print run(sys.argv[1:])
 
 # EOF
