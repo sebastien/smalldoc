@@ -4,7 +4,7 @@
 <title>SDoc - Python API introspection</title>
 <!-- snip-snip-snip-snip-snip-snip -->
 <style type="text/css" media="screen">
-
+/* css-main-snip */
 html, body {
 	background : white;
 	color: #000000;
@@ -31,7 +31,8 @@ a:hover {
 pre, code {
 	color: #808080;
 }
-
+/* css-main-snip */
+/* css-classes-snip */
 #descriptions {
 	height: 35%;
 	width: 100%;
@@ -50,7 +51,7 @@ pre, code {
 	border-bottom: 1px solid #f0f0f0;
 }
 
-#content {
+#api {
 	padding-left: 5pt;
 	margin: 0;
 	overflow: auto;
@@ -84,7 +85,7 @@ pre, code {
 	color: #808080;
 }
 
-.root, .container, content {
+.root, .container {
 	padding-left: 10pt;
 	color: #808080;
 	border-left: 1px solid #f0f0f0;
@@ -113,10 +114,11 @@ pre, code {
 	color: #b0c0c0;
 	font-style: italic;
 }
-
+/* css-classes-snip */
 </style>
 <!-- snip-snip-snip-snip-snip-snip -->
 <script type="text/javascript">
+// javascript-snip
 
 var displays    = [];
 var selected    = undefined;
@@ -128,7 +130,7 @@ function documentElement( from_id, to_id )
 {
 	if ( to_id == undefined ) { to_id = from_id ; from_id = undefined; }
 	if ( hidden  == undefined ) hidden  = document.getElementById("hidden");
-	if ( content == undefined ) content = document.getElementById("content");
+	if ( content == undefined ) content = document.getElementById("api");
 	// We get the target element and the associated description element
 	var element  = document.getElementById(to_id);
 	var felement = document.getElementById(from_id);
@@ -187,15 +189,29 @@ function describeElement( eid )
 		alert("ERROR: Description not found for id 'd_" + eid + "'");
 	}
 }
+// javascript-snip
 <!-- snip-snip-snip-snip-snip-snip -->
 </script>
 </head>
 <body onLoad="javascript:documentElement('$MAIN');">
+<!-- body -->
 <div id='descriptions'>
-	<div id='modules'>$MODULES</div>
+	<div id='modules'>
+	<!-- modules-snip -->
+	$MODULES
+	<!-- modules-snip -->
+	</div>
+	<!-- descriptions-snip -->
 	$DESCRIPTIONS
+	<!-- descriptions-snip -->
 </div>
-<div id='content'><!-- main element will be displayed here --></div>
-<div id='hidden'>$CONTENT<!-- hidden nodes will be moved here --></div>
+<div id='api'><!-- main element will be displayed here --></div>
+<div id='hidden'>
+	<!-- hidden-snip -->
+	$CONTENT
+	<!-- hidden-snip -->
+	<!-- hidden nodes will be moved here -->
+</div>
+<!-- body -->
 </body>
 </html>

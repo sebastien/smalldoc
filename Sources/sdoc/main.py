@@ -8,8 +8,10 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 03-Avr-2006
+# Last mod  : 06-Avr-2006
 # History   :
+#             06-Avr-2006 - Added support for classes that do not return a class
+#             type.
 #             03-Avr-2006 - Fixed a problem with some attributes that are
 #             generated at each access (eg. Class UnboundMethods...)
 #             31-Mar-2006 - Added inheritance support, added multiple modules
@@ -21,10 +23,10 @@
 #       as sometimes a 'getattr' will produce values instead of returning
 #       a single one.
 
-import os, sys, types, string, fnmatch, gc
+import os, sys, types, string, fnmatch, gc, re
 
 gc.disable()
-__version__ = "0.3.0"
+__version__ = "0.3.2"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -38,9 +40,10 @@ listed Python modules."""
 KEY_MODULE    = "Modules"
 KEY_CLASS     = "Classes"
 KEY_FUNCTION  = "Functions"
+KEY_METHOD    = "Methods"
 KEY_VALUE     = "Values"
 MOD_INHERITED = "Inherited"
-KEYS_ORDER    = (KEY_MODULE, KEY_CLASS, KEY_FUNCTION, KEY_VALUE)
+KEYS_ORDER    = (KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KEY_VALUE)
 
 COMPACT = {
 	"container"     : "cr",
@@ -54,8 +57,10 @@ COMPACT = {
 	"title"         : "t",
 	"undocumented"  : "u"
 }
+RE_SPACES = re.compile("\s*\n\s*\n+")
 def html_escape( text ):
-	return str(text).replace("<", "&lt;").replace(">", "&gt;")
+	return RE_SPACES.sub("<br />", str(text).replace("<", "&lt;").replace(">",
+	"&gt;"))
 
 def compact_html( text ):
 	# Step 1: Splits the text
@@ -70,12 +75,32 @@ def compact_html( text ):
 		body = body.replace("class='%s'" % (complete), "class='%s'" % (compact))
 	return head + css + script + body
 
-def typeToName( a_type ):
+def snip_html( html ):
+	"""Returns a tuple (CSS_MAIN, CSS_CLASSES, JAVASCRIPT, MODULES,
+	DESCRIPTIONS, CONTENT) contains the CSS general definitions, the
+	CSS specific classes definition, the JavaScript source code, the content
+	of the #modules div, the content of the #descriptions div, the content
+	of the #hiddent div. CSS and JavaScript are not enclosed in HTML tags.
+
+	You will have to rebuild your document afterwards. And be sure to define
+	#descriptions, #modules, #api and #hidden divs."""
+	css_main     = html.split("/* css-main-snip */")[1]
+	css_classes  = html.split("/* css-classes-snip */")[1]
+	javascript   = html.split("// javascript-snip")[1]
+	modules      = html.split("<!-- modules-snip -->")[1]
+	descriptions = html.split("<!-- descriptions-snip -->")[1]
+	content      = html.split("<!-- hidden-snip -->")[1]
+	return css_main, css_classes, javascript, modules, descriptions, content
+
+def typeToName( a_value ):
 	"""Normalizes the given type to a name. Basically, this will return either
 	'Module', 'Class', 'Function' or 'Value'."""
+	a_type = type(a_value)
 	if a_type == types.ModuleType: return KEY_MODULE
 	elif a_type == types.ClassType: return KEY_CLASS
-	elif a_type in (types.FunctionType, types.MethodType, types.UnboundMethodType): return KEY_FUNCTION
+	elif a_type  == types.FunctionType: return KEY_FUNCTION
+	elif a_type in (types.MethodType, types.UnboundMethodType): return KEY_METHOD
+	elif repr(a_value).startswith("<class '"): return KEY_CLASS
 	else: return KEY_VALUE
 
 def _describeFunction( function ):
@@ -106,20 +131,18 @@ def _describeFunction( function ):
 
 def describeType( value ):
 	"""Gives a detailed, human-readable string describing the given type."""
-	a_type = type(value)
+	a_type = typeToName(value)
 	name = lambda o:"<span class='name'>%s</span>" % (o.__name__)
-	if a_type == types.ModuleType:
+	if a_type == KEY_MODULE:
 		return "Module " + name(value)
-	if a_type == types.ClassType:
+	if a_type == KEY_CLASS:
 		return "Class " + name(value)
-	if a_type == types.FunctionType:
+	if a_type == KEY_FUNCTION:
 		return "Function " + name(value)
-	if a_type == types.MethodType:
-		return "Method " + name(value)
-	if a_type == types.UnboundMethodType:
+	if a_type == KEY_METHOD:
 		return "Method " + name(value)
 	else:
-		return a_type.__name__
+		return type(value).__name__
 
 def log(*args):
 	sys.stderr.write("%s\n" % (" ".join(map(str, args))))
@@ -144,7 +167,7 @@ class Documenter:
 	def __init__( self, modules=None ):
 		self._visited           = {}
 		self._descriptions      = []
-		self._contents          = []
+		self._contents          = {}
 		self._acceptedModules   = []
 		self._modules           = []
 		self._modulesNavigation = ""
@@ -168,7 +191,7 @@ class Documenter:
 			if key not in something.__dict__.keys(): mod = MOD_INHERITED
 			else: mod = ""
 			value  = self._getAttribute(something, key)
-			values = result.setdefault(mod + typeToName(type(value)), [])
+			values = result.setdefault(mod + typeToName(value), [])
 			values.append(key)
 		# Then, for a particular type, we sort the items
 		for key, values in result.items():
@@ -201,8 +224,9 @@ class Documenter:
 		"""Tells wether the Documenter should recurse on the given object. If
 		the object is a class or an accepted module, this will return True,
 		False otherwise."""
-		if type(something) == types.ClassType: return True
-		if type(something) != types.ModuleType: return False
+		t = typeToName(something)
+		if t == KEY_CLASS: return True
+		if t != KEY_MODULE: return False
 		name = something.__name__
 		for pattern in self._acceptedModules:
 			if fnmatch.fnmatch(name, pattern):
@@ -232,8 +256,9 @@ class Documenter:
 		attribute in the object, otherwise returns its type and representation.
 		This returns a div with a title and paragraph.This is a rather long
 		text."""
-		this_id = self.id(something)
-		result = "<div id='d_%s' class='description'>" % (this_id)
+		this_id = "d_" + self.id(something)
+		if self._contents.get(this_id) != None: return self._contents.get(this_id)
+		result = "<div id='%s' class='description'>" % (this_id)
 		result += "<h1>%s</h1>" % (describeType(something))
 		result += "<div class='representation'>"
 		result += self.representation(something)
@@ -244,19 +269,20 @@ class Documenter:
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
+		self._contents[this_id] = result
 		return result
 
 	def document( self, name, something, level=0 ):
 		"""Document the given element, which has the given name."""
 		this_id = self.id(something)
-		if self._visited.get(this_id):
-			return ""
+		if self._visited.get(this_id): return ""
 		self._path.append(name)
 		result = ""
 		if level == 0 or self.recurses(something):
 			result += self.list(name, something, level)
 		self._descriptions.append(self.describe(something))
 		self._path.pop()
+		self._visited[this_id] = True
 		return result
 	
 	def documentModule( self, name ):
@@ -321,10 +347,10 @@ class Documenter:
 						result += """<a %s>%s</a><br />""" % (link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
-					if t: self._contents.append(t)
-			if group_printed: result += "</div>"
+					if t: self._contents[child_id] = t
+				if group_printed: result += "</div>"
 		result += "</div>"
-		self._contents.append(result)
+		self._contents[this_id] = result
 		return result
 	
 	def _getAttribute( self, o, name ):
@@ -335,12 +361,15 @@ class Documenter:
 		template   = string.Template(template_f.read())
 		template_f.close()
 		# We fill the template
+		if not self._modules: return ""
 		return template.substitute(
 			MAIN         = self.id(self._modules[0]),
 			MODULES      = self._modulesNavigation,
-			CONTENT      = "".join(self._contents),
+			CONTENT      = "".join(self._contents.values()),
 			DESCRIPTIONS = "".join(self._descriptions)
 		)
+	
+
 
 # ------------------------------------------------------------------------------
 #
@@ -351,6 +380,7 @@ class Documenter:
 OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
 OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
 OPT_COMPACT    = "Outputs a compact HTML (slower)"
+OPT_BODY       = "Only outputs the HTML document body."""
 DESCRIPTION    = """\
 SDoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
@@ -372,6 +402,8 @@ def run( args ):
 		help=OPT_ACCEPTS)
 	oparser.add_option("-c", "--compact", action="store_true", dest="compact",
 		help=OPT_COMPACT)
+	oparser.add_option("-b", "--body", action="store_true", dest="body",
+		help=OPT_BODY)
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
 	documenter   = Documenter(options.accepts)
@@ -391,6 +423,8 @@ def run( args ):
 	else:
 		html = ""
 		oparser.print_help()
+	if options.body:
+		html = html.split("<!-- body -->")[1]
 	gc.enable()
 	return html
 
