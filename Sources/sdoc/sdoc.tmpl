@@ -27,7 +27,6 @@ a:active, a:focus {
 a:hover {
 }
 
-
 pre, code {
 	color: #808080;
 }
@@ -137,7 +136,7 @@ function documentElement( from_id, to_id )
 	var level    = 0;
 	if ( felement != undefined )
 	{
-		level        = felement.getAttributeNS("", "level");
+		level        = felement.getAttribute("level");
 		if ( !level ) { level = 0; }
 		else { level = parseInt(level); }
 	}

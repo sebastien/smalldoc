@@ -8,8 +8,10 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 06-Avr-2006
+# Last mod  : 29-May-2006
 # History   :
+#             29-May-2006 - Added possibility to given .py files as input
+#             02-May-2006 - Imported values are not listed anymore
 #             06-Avr-2006 - Added support for classes that do not return a class
 #             type.
 #             03-Avr-2006 - Fixed a problem with some attributes that are
@@ -26,7 +28,7 @@
 import os, sys, types, string, fnmatch, gc, re
 
 gc.disable()
-__version__ = "0.3.2"
+__version__ = "0.3.4"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -169,6 +171,7 @@ class Documenter:
 		self._descriptions      = []
 		self._contents          = {}
 		self._acceptedModules   = []
+		self._currentModule     = None
 		self._modules           = []
 		self._modulesNavigation = ""
 		self._path              = []
@@ -191,6 +194,13 @@ class Documenter:
 			if key not in something.__dict__.keys(): mod = MOD_INHERITED
 			else: mod = ""
 			value  = self._getAttribute(something, key)
+			# We check if the value should be taken into account, that is we
+			# ensure that the function or class belongs to the current module.
+			if hasattr(value, "__module__") and \
+			not getattr(value, "__module__") == self._currentModule.__name__:
+				# TODO: We should tell that this module imports another one,
+				# which is the __module__ value
+				continue
 			values = result.setdefault(mod + typeToName(value), [])
 			values.append(key)
 		# Then, for a particular type, we sort the items
@@ -296,6 +306,7 @@ class Documenter:
 			self._error("Cannot import module '%s'\n%s" % (name,e))
 			return
 		assert module
+		self._currentModule = module
 		self._modules.append(module)
 		self.document(name, module, 0)
 		if self._modulesNavigation: self._modulesNavigation += " &bull; "
@@ -387,7 +398,7 @@ JavaScript-based documentation that have a SmallTalk feel. It is inspired from
 the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 
 See <http://www.ivy.fr/sdoc> for more information."""
-USAGE          = "%prog [options] module.name ..."
+USAGE          = "%prog [options] module.py module.name ..."
 
 def run( args ):
 	"""Runs SDoc as a command line tool"""
@@ -415,6 +426,11 @@ def run( args ):
 			sys.path.insert(0, arg)
 	# And now document the module
 	for arg in args:
+		if arg.endswith(".py"):
+			dir_path = os.path.abspath(os.path.dirname(arg)) 
+			if dir_path not in sys.path: sys.path.append(dir_path)
+			arg = os.path.basename(arg)
+			arg = os.path.splitext(arg)[0]
 		documenter.documentModule(arg)
 	# We eventually return the HTML file
 	if args:
