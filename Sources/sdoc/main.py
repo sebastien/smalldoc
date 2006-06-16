@@ -25,10 +25,9 @@
 #       as sometimes a 'getattr' will produce values instead of returning
 #       a single one.
 
-import os, sys, types, string, fnmatch, gc, re
+import os, sys, types, string, fnmatch, re
 
-gc.disable()
-__version__ = "0.3.4"
+__version__ = "0.3.6"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -402,8 +401,8 @@ USAGE          = "%prog [options] module.py module.name ..."
 
 def run( args ):
 	"""Runs SDoc as a command line tool"""
+	if type(args) not in (type([]), type(())): args = [args]
 	from optparse import OptionParser
-	gc.disable()
 	# We create the parse and register the options
 	oparser = OptionParser(prog="sdoc", description=DESCRIPTION,
 	usage=USAGE, version="SDoc " + __version__)
@@ -425,13 +424,18 @@ def run( args ):
 			log("Adding path '%s'..." % (arg))
 			sys.path.insert(0, arg)
 	# And now document the module
+	target_html = None
 	for arg in args:
 		if arg.endswith(".py"):
 			dir_path = os.path.abspath(os.path.dirname(arg)) 
 			if dir_path not in sys.path: sys.path.append(dir_path)
 			arg = os.path.basename(arg)
 			arg = os.path.splitext(arg)[0]
-		documenter.documentModule(arg)
+			documenter.documentModule(arg)
+		elif arg.lower().endswith(".html"):
+			target_html = arg
+		else:
+			documenter.documentModule(arg)
 	# We eventually return the HTML file
 	if args:
 		html = documenter.toHTML()
@@ -441,7 +445,10 @@ def run( args ):
 		oparser.print_help()
 	if options.body:
 		html = html.split("<!-- body -->")[1]
-	gc.enable()
+	# And optionnaly save the html
+	if target_html:
+		open(target_html, "w").write(html)
+		html = "HTML documentation generated: " + target_html
 	return html
 
 if __name__ == "__main__":
