@@ -8,16 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 29-May-2006
-# History   :
-#             29-May-2006 - Added possibility to given .py files as input
-#             02-May-2006 - Imported values are not listed anymore
-#             06-Avr-2006 - Added support for classes that do not return a class
-#             type.
-#             03-Avr-2006 - Fixed a problem with some attributes that are
-#             generated at each access (eg. Class UnboundMethods...)
-#             31-Mar-2006 - Added inheritance support, added multiple modules
-#             30-Mar-2006 - First implementation
+# Last mod  : 03-Aug-2006
 # -----------------------------------------------------------------------------
 
 # TODO: Optimize by using a StringIO instead of concateating strings
@@ -27,7 +18,13 @@
 
 import os, sys, types, string, fnmatch, re
 
-__version__ = "0.3.6"
+try:
+	import kiwi.main as kiwi
+	import StringIO
+except ImportError:
+	kiwi = None
+
+__version__ = "0.4.0"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -105,6 +102,8 @@ def typeToName( a_value ):
 	else: return KEY_VALUE
 
 def _describeFunction( function ):
+	"""Utility function that returns an HTML representation of the function
+	prototype."""
 	if hasattr(function, "im_func"): function = function.im_func
 	try:
 		defaults = function.func_defaults
@@ -183,6 +182,16 @@ class Documenter:
 		self._errors.append(message)
 		err(message)
 
+	def _sortAlphabetically( self, a, b ):
+		"""Predicate that sorts the given strings so that uppercase are first,
+		then mixed case, then lowercase"""
+		def f(a):
+			if   a.upper() == a.upper(): a = (2, a)
+			elif a[0].upper() == a[0].upper(): a =  (1, a)
+			else: a = (0, a)
+			return a
+		return cmp(f(a), f(b))
+
 	def _keysByType( self, something ):
 		"""Returns a dictionnary containing the keys of the given object dictionnary
 		grouped by type and sorted alphabetically."""
@@ -204,7 +213,7 @@ class Documenter:
 			values.append(key)
 		# Then, for a particular type, we sort the items
 		for key, values in result.items():
-			values.sort()
+			values.sort(self._sortAlphabetically)
 		return result
 
 	def id( self, something ):
@@ -257,8 +266,10 @@ class Documenter:
 		if type(something) in (types.FunctionType, types.MethodType,
 		types.UnboundMethodType):
 			return _describeFunction(something)
-		else:
+		if type(something) in (tuple, list, dict, unicode, str):
 			return "<code>%s</code>" % (html_escape(repr(something)))
+		else:
+			return ""
 
 	def describe( self, something ):
 		"""Gets a description for the given object. This looks for a __doc__
@@ -274,7 +285,13 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if hasattr(something, "__doc__") and something.__doc__:
-			result += "%s" % (html_escape(something.__doc__))
+			if kiwi:
+				s = StringIO.StringIO(something.__doc__)
+				_, r = kiwi.run("-m --body-only --", s, noOutput=True)
+				s.close()
+				result += r
+			else:
+				result += "%s" % (html_escape(something.__doc__))
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
@@ -317,7 +334,7 @@ class Documenter:
 	def list( self, name, something, level=0 ):
 		"""Returns a layer containing the list of fields in this object. This
 		implies that this object can be "dir'ed", and returns True when given to
-		the @Documnenter.recurse method."""
+		the @Documenter.recurse method."""
 		# If the object was alredy visited, we skip it and return an empty
 		# string
 		this_id = self.id(something)
@@ -327,6 +344,7 @@ class Documenter:
 		result += "<div id='%s' class='%s'>" % (this_id, level == 0 and "root" or "container")
 		result += "<div class='name'><a href='javascript:describeElement(\"%s\");'>%s</a></div>" % (this_id, name)
 		# We list the children names, grouped by type
+		has_attributes = False
 		for some_type in KEYS_ORDER:
 			attributes = keys.get(some_type) 
 			inherited  = keys.get(MOD_INHERITED + some_type)
@@ -348,17 +366,22 @@ class Documenter:
 						result += "<div class='title'>%s</div class='title'><div class='group'>" % ( mod + some_type )
 						group_printed = True
 					child_id = self.id(child)
-					if self.recurses(child):
-						link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
-						is_documented = child.__dict__.get("__doc__") and "documented" or "undocumented"
-						result += """<span class='%s'><a %s>%s</a></span><br />""" % (is_documented, link, attribute)
-					else:
-						link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
-						result += """<a %s>%s</a><br />""" % (link, attribute)
+					is_documented = getattr(child, "__doc__") and "documented" or "undocumented"
+					link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
+					type_name = typeToName(child)
+					prefix = "&sdot;"
+					if type_name == KEY_METHOD: prefix = "&fnof;"
+					if type_name == KEY_FUNCTION: prefix = "&lambda;"
+					if type_name == KEY_CLASS: prefix = "&Tau;"
+					if attribute.upper() == attribute: prefix = "&bull;"
+					result += """<span class='%s'><span class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented, prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
 					if t: self._contents[child_id] = t
+					has_attributes = True
 				if group_printed: result += "</div>"
+		if not has_attributes:
+			result += "<span class='noattributes'>No attributes</span>"
 		result += "</div>"
 		self._contents[this_id] = result
 		return result
