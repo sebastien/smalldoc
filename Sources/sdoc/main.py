@@ -8,13 +8,22 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 03-Aug-2006
+# Last mod  : 08-Aug-2006
 # -----------------------------------------------------------------------------
 
 # TODO: Optimize by using a StringIO instead of concateating strings
 # TODO: Use paths and not the 'id' function to identify the different objects
 #       as sometimes a 'getattr' will produce values instead of returning
 #       a single one.
+# TODO: Fix the problem when clicking on the module name
+# TODO: Allow to close containers
+# TODO: Allow to choose between alpha and source-code order for methods
+# TODO: Add filter / search
+# TODO: Add parents in the class
+# TODO: Add 'related' (same constants, same type, etc) in the same scope
+# TODO: Related like 'Storage' and 'SQLStorage', or 'ModelError',
+#       'InventoryError'
+# TOOD: Add 'important' tags for classes that have many methods
 
 import os, sys, types, string, fnmatch, re
 
@@ -24,7 +33,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -389,7 +398,7 @@ class Documenter:
 	def _getAttribute( self, o, name ):
 		return getattr(o, name)
 
-	def toHTML( self ):
+	def toHTML( self, title ):
 		template_f = file(os.path.dirname(os.path.abspath(__file__)) + "/sdoc.tmpl", "rt")
 		template   = string.Template(template_f.read())
 		template_f.close()
@@ -399,10 +408,9 @@ class Documenter:
 			MAIN         = self.id(self._modules[0]),
 			MODULES      = self._modulesNavigation,
 			CONTENT      = "".join(self._contents.values()),
-			DESCRIPTIONS = "".join(self._descriptions)
+			DESCRIPTIONS = "".join(self._descriptions),
+			TITLE        = title
 		)
-	
-
 
 # ------------------------------------------------------------------------------
 #
@@ -437,6 +445,8 @@ def run( args ):
 		help=OPT_COMPACT)
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
 		help=OPT_BODY)
+	oparser.add_option("-t", "--title", dest="title",
+		help=OPT_BODY)
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
 	documenter   = Documenter(options.accepts)
@@ -461,7 +471,8 @@ def run( args ):
 			documenter.documentModule(arg)
 	# We eventually return the HTML file
 	if args:
-		html = documenter.toHTML()
+		title = options.title or "Python API documentation (SDoc)"
+		html = documenter.toHTML(title=title)
 		if options.compact: html = compact_html(html)
 	else:
 		html = ""
