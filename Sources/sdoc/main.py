@@ -24,11 +24,13 @@
 # TODO: Related like 'Storage' and 'SQLStorage', or 'ModelError',
 #       'InventoryError'
 # TOOD: Add 'important' tags for classes that have many methods
+# TODO: Add Exceptions group
 
 import os, sys, types, string, fnmatch, re
 
 try:
-	import kiwi.main as kiwi
+	import kiwi.main 
+	import kiwi.core
 	import StringIO
 except ImportError:
 	kiwi = None
@@ -294,9 +296,14 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if hasattr(something, "__doc__") and something.__doc__:
-			if kiwi:
-				s = StringIO.StringIO(something.__doc__)
-				_, r = kiwi.run("-m --body-only --", s, noOutput=True)
+			if kiwi.main:
+				# We correct the first line indentation of the text if necessary
+				docstring = something.__doc__
+				first_line_indent = kiwi.core.Parser.getIndentation(docstring[:docstring.find("\n")])
+				text_indent = kiwi.core.Parser.getIndentation(docstring)
+				docstring = " " * (text_indent - first_line_indent)  + docstring
+				s = StringIO.StringIO(docstring)
+				_, r = kiwi.main.run("-m --body-only --", s, noOutput=True)
 				s.close()
 				result += r
 			else:
@@ -422,6 +429,7 @@ OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
 OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
 OPT_COMPACT    = "Outputs a compact HTML (slower)"
 OPT_BODY       = "Only outputs the HTML document body."""
+OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
 DESCRIPTION    = """\
 SDoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
@@ -446,7 +454,7 @@ def run( args ):
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
 		help=OPT_BODY)
 	oparser.add_option("-t", "--title", dest="title",
-		help=OPT_BODY)
+		help=OPT_TITLE)
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
 	documenter   = Documenter(options.accepts)

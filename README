@@ -1,8 +1,9 @@
 == SDoc
+== Cool Python Documentation Generators
 -- Author: Sebastien Pierre
--- Date: 06-Apr-2006
--- Version: 0.3.2
+-- Date: 08-Apr-2006
 
+There are many Python API documenters, ...
 
 Implementation notes
 ====================
