@@ -196,7 +196,7 @@ function documentElement( from_id, to_id )
 		if ( element == selected ) return;
 		// We re-order the content nodes anyway
 		element.parentNode.removeChild(element);
-		element.setAttributeNS("", "level", level + 1);
+		element.setAttribute("level", level + 1);
 		content.appendChild(element);
 		// Ensure that the node is visible
 		element.style.display  = "block";
@@ -206,7 +206,7 @@ function documentElement( from_id, to_id )
 		{
 			var hiding_id = displays.pop()
 			var hiding_el = document.getElementById(hiding_id);
-			if ( hiding_el )
+			if ( hiding_el != element )
 			{
 				hiding_el.parentNode.removeChild(hiding_el);
 				hidden.appendChild(hiding_el);
