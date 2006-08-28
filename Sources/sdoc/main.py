@@ -35,7 +35,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -175,7 +175,7 @@ class Documenter:
 	the given objects. It can be later interrogated to create the HTML file that
 	will be the documentation."""
 
-	def __init__( self, modules=None ):
+	def __init__( self, modules=None, encoding='utf-8' ):
 		self._visited           = {}
 		self._descriptions      = []
 		self._contents          = {}
@@ -185,6 +185,7 @@ class Documenter:
 		self._modulesNavigation = ""
 		self._path              = []
 		self._errors            = []
+		self._encoding          = encoding
 		if type(modules) in (str, unicode): self._acceptedModules.append(modules)
 		elif modules: self._acceptedModules.extend(modules)
 
@@ -303,7 +304,7 @@ class Documenter:
 				text_indent = kiwi.core.Parser.getIndentation(docstring)
 				docstring = " " * (text_indent - first_line_indent)  + docstring
 				s = StringIO.StringIO(docstring)
-				_, r = kiwi.main.run("-m --body-only --", s, noOutput=True)
+				_, r = kiwi.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
 				s.close()
 				result += r
 			else:
@@ -430,6 +431,7 @@ OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
 OPT_COMPACT    = "Outputs a compact HTML (slower)"
 OPT_BODY       = "Only outputs the HTML document body."""
 OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
+OPT_ENCODING   = "Specifies the encoding of the strings found in the given modules"
 DESCRIPTION    = """\
 SDoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
@@ -455,9 +457,11 @@ def run( args ):
 		help=OPT_BODY)
 	oparser.add_option("-t", "--title", dest="title",
 		help=OPT_TITLE)
+	oparser.add_option("-e", "--encoding", dest="encoding", default="utf-8",
+		help=OPT_ENCODING)
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
-	documenter   = Documenter(options.accepts)
+	documenter   = Documenter(options.accepts, encoding=options.encoding)
 	# We modify the sys.path
 	if options.pythonpath:
 		options.pythonpath.reverse()
