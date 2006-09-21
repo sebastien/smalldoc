@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 08-Aug-2006
+# Last mod  : 21-Sep-2006
 # -----------------------------------------------------------------------------
 
 # TODO: Optimize by using a StringIO instead of concateating strings
@@ -35,7 +35,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -132,7 +132,7 @@ def _describeFunction( function ):
 	# list
 	for i in range(len(default_args)):
 		d = default_args[i]
-		args.append("%s=%s" % (d, repr(d)) )
+		args.append("%s=%s" % (d, repr(defaults[i])) )
 	# We append the arguments
 	if code.co_flags & 0x0004: # CO_VARARGS
 		args.append('*'+code.co_varnames[len(args)])
