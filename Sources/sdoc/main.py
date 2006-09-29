@@ -53,6 +53,16 @@ KEY_METHOD    = "Methods"
 KEY_VALUE     = "Values"
 MOD_INHERITED = "Inherited"
 KEYS_ORDER    = (KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KEY_VALUE)
+SPECIAL_ATTRIBUTES = {
+	"__init__":"constructor",
+	"__cmp__":"compare to",
+	"__eq__":"equals",
+	"__del__":"delete",
+	"__getitem__":"get item",
+	"__setitem__":"set item",
+	"__len__":"length",
+	"__iter__":"iterator"
+}
 
 COMPACT = {
 	"container"     : "cr",
@@ -267,7 +277,7 @@ class Documenter:
 		"""Tells wether the given name or value will be skipped. Basically,
 		some names (like __builtins__, etc) as well as unaccepted modules will
 		be skipped."""
-		if name.startswith("__"): return True
+		if name.startswith("__") and name not in (SPECIAL_ATTRIBUTES.keys()): return True
 		if type(value) in (types.ClassType, types.ModuleType) \
 		and not self.recurses(value):
 			return True
@@ -383,7 +393,10 @@ class Documenter:
 						result += "<div class='title'>%s</div class='title'><div class='group'>" % ( mod + some_type )
 						group_printed = True
 					child_id = self.id(child)
-					is_documented = getattr(child, "__doc__") and "documented" or "undocumented"
+					try:
+						is_documented = getattr(child, "__doc__") and "documented" or "undocumented"
+					except:
+						is_documented = False
 					link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
 					type_name = typeToName(child)
 					prefix = "&sdot;"
@@ -391,6 +404,9 @@ class Documenter:
 					if type_name == KEY_FUNCTION: prefix = "&lambda;"
 					if type_name == KEY_CLASS: prefix = "&Tau;"
 					if attribute.upper() == attribute: prefix = "&bull;"
+					if attribute in SPECIAL_ATTRIBUTES:
+						prefix = "&equiv;"
+						attribute =  "<span class='special'>%s</span>" % (SPECIAL_ATTRIBUTES[attribute])
 					result += """<span class='%s'><span class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented, prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
