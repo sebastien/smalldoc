@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 21-Sep-2006
+# Last mod  : 01-Nov-2006
 # -----------------------------------------------------------------------------
 
 # TODO: Optimize by using a StringIO instead of concateating strings
@@ -27,6 +27,7 @@
 # TODO: Add Exceptions group
 
 import os, sys, types, string, fnmatch, re
+import sdoc
 
 try:
 	import kiwi.main 
@@ -35,7 +36,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -272,7 +273,7 @@ class Documenter:
 			if fnmatch.fnmatch(name, pattern):
 				return True
 		return False
-	
+
 	def isSkipped( self, name, value ):
 		"""Tells wether the given name or value will be skipped. Basically,
 		some names (like __builtins__, etc) as well as unaccepted modules will
@@ -423,7 +424,7 @@ class Documenter:
 		return getattr(o, name)
 
 	def toHTML( self, title ):
-		template_f = file(os.path.dirname(os.path.abspath(__file__)) + "/sdoc.tmpl", "rt")
+		template_f = file(os.path.dirname(os.path.abspath(sdoc.__file__)) + "/sdoc.tmpl", "rt")
 		template   = string.Template(template_f.read())
 		template_f.close()
 		# We fill the template
