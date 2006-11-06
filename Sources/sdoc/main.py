@@ -8,12 +8,14 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 03-Nov-2006
+# Last mod  : 06-Nov-2006
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
 # inheritance
 
+# TODO: Support for decorators "_decorated" attribute (so that we are not
+# displayed a "decorator"
 # TODO: Optimize by using a StringIO instead of concateating strings
 # TODO: Use paths and not the 'id' function to identify the different objects
 #       as sometimes a 'getattr' will produce values instead of returning
@@ -32,6 +34,7 @@
 import os, sys, types, string, fnmatch, re
 import sdoc
 
+# Kiwi support allows to expand the markup within SDoc
 try:
 	import kiwi.main 
 	import kiwi.core
@@ -39,7 +42,13 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.5.1"
+# LambdaFactory allows to generate SDoc documentation from any program model
+try:
+	import lambdafactory.interfaces
+except ImportError:
+	lambdafactory = None
+
+__version__ = "0.5.5"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -126,62 +135,6 @@ def snip_html( html ):
 	content      = html.split("<!-- hidden-snip -->")[1]
 	return css_main, css_classes, javascript, modules, descriptions, content
 
-def typeToName( a_value ):
-	"""Normalizes the given type to a name. Basically, this will return either
-	'Module', 'Class', 'Function' or 'Value'."""
-	a_type = type(a_value)
-	if a_type == types.ModuleType: return KEY_MODULE
-	elif a_type == types.ClassType: return KEY_CLASS
-	elif a_type  == types.FunctionType: return KEY_FUNCTION
-	elif a_type in (types.MethodType, types.UnboundMethodType): return KEY_METHOD
-	elif repr(a_value).startswith("<class '"): return KEY_CLASS
-	else: return KEY_VALUE
-
-def _describeFunction( function ):
-	"""Utility function that returns an HTML representation of the function
-	prototype."""
-	if hasattr(function, "im_func"): function = function.im_func
-	try:
-		defaults = function.func_defaults
-		code     = function.func_code
-	except:
-		return ""
-	args = list(code.co_varnames[:code.co_argcount])
-	# We split the args in args / default_args
-	if defaults:
-		default_args = args[-len(defaults):]
-		args         = args[:-len(defaults)]
-	else:
-		default_args = []
-	# We add the default arguments (properly formatted) to the arguments
-	# list
-	for i in range(len(default_args)):
-		d = default_args[i]
-		args.append("%s=%s" % (d, repr(defaults[i])) )
-	# We append the arguments
-	if code.co_flags & 0x0004: # CO_VARARGS
-		args.append('*'+code.co_varnames[len(args)])
-	if code.co_flags & 0x0008: # CO_VARKEYWORDS
-		args.append('**'+code.co_varnames[len(args)])
-	return "<code>%s( %s )</code>" % (function.__name__, ", ".join(map(str,args)))
-
-def describeType( value ):
-	"""Gives a detailed, human-readable string describing the given type."""
-	a_type = typeToName(value)
-	name = lambda o:"<span class='name'>%s</span>" % (o.__name__)
-	if a_type == KEY_MODULE:
-		return "Module " + name(value)
-	if a_type == KEY_CLASS:
-		return "Class " + name(value)
-	if a_type == KEY_FUNCTION:
-		return "Function " + name(value)
-	if a_type == KEY_METHOD:
-		return "Method " + name(value)
-	if a_type == KEY_PARENT:
-		return "Parent " + name(value)
-	else:
-		return type(value).__name__
-
 def log(*args):
 	sys.stderr.write("%s\n" % (" ".join(map(str, args))))
 
@@ -216,6 +169,7 @@ class Documenter:
 		if type(modules) in (str, unicode): self._acceptedModules.append(modules)
 		elif modules: self._acceptedModules.extend(modules)
 
+
 	def _error( self, message ):
 		"""Logs an error in this documenter."""
 		self._errors.append(message)
@@ -231,29 +185,45 @@ class Documenter:
 			return a
 		return cmp(f(a), f(b))
 
+	def _isExternalValue( self, value ):
+		"""Tells if the given value is defined in an external module or not."""
+		if hasattr(value, "__module__") and \
+		not getattr(value, "__module__") == self._currentModule.__name__:
+			# TODO: We should tell that this module imports another one,
+			# which is the __module__ value
+			return True
+		return False
+
+	def _keysByTypeHelper( self, keysbytype, value ):
+		"""This function may be called to enrich the keysByType result with
+		additional keys and values.
+		
+		This hook was added specifically for Python dir() method not listing the
+		`__bases__` attribute of class objects, which is necessary."""
+		# If the something is a class, we add class-specific attributes which
+		# are not detected by "dir()" by default
+		if type(value) == types.ClassType:
+			keysbytype.setdefault(KEY_PARENT, []).append("__bases__")
+
 	def _keysByType( self, something ):
 		"""Returns a dictionnary containing the keys of the given object dictionnary
 		grouped by type and sorted alphabetically."""
 		result = {}
 		# We dispatch the values by type in the result dictionnary
-		for key in dir(something):
+		for key in self._getAllSlotsNames(something):
 			# We see if the key is inherited or not
-			if key not in something.__dict__.keys(): mod = MOD_INHERITED
+			if key not in self._getOwnSlotsNames(something): mod = MOD_INHERITED
 			else: mod = ""
 			value  = self._getAttribute(something, key)
+			# FIXME: Abstract this
 			# We check if the value should be taken into account, that is we
 			# ensure that the function or class belongs to the current module.
-			if hasattr(value, "__module__") and \
-			not getattr(value, "__module__") == self._currentModule.__name__:
-				# TODO: We should tell that this module imports another one,
-				# which is the __module__ value
+			if self._isExternalValue(value):
 				continue
-			values = result.setdefault(mod + typeToName(value), [])
+			values = result.setdefault(mod + self.typeToName(value), [])
 			values.append(key)
-		# If the something is a class, we add class-specific attributes which
-		# are not detected by "dir()" by default
-		if type(something) == types.ClassType:
-			result.setdefault(KEY_PARENT, []).append("__bases__")
+		# We invoke the _keysByTypeHelper before going further
+		self._keysByTypeHelper(result, something)
 		# Then, for a particular type, we sort the items
 		for key, values in result.items():
 			values.sort(self._sortAlphabetically)
@@ -285,10 +255,10 @@ class Documenter:
 		"""Tells wether the Documenter should recurse on the given object. If
 		the object is a class or an accepted module, this will return True,
 		False otherwise."""
-		t = typeToName(something)
+		t = self.typeToName(something)
 		if t == KEY_CLASS: return True
 		if t != KEY_MODULE: return False
-		name = something.__name__
+		name = self._getName(something)
 		for pattern in self._acceptedModules:
 			if fnmatch.fnmatch(name, pattern):
 				return True
@@ -308,7 +278,7 @@ class Documenter:
 		"""Gives the Python-representation of the given object."""
 		if type(something) in (types.FunctionType, types.MethodType,
 		types.UnboundMethodType):
-			return _describeFunction(something)
+			return self._describeFunction(something)
 		if type(something) in (tuple, list, dict, unicode, str):
 			return "<code>%s</code>" % (html_escape(repr(something)))
 		else:
@@ -322,15 +292,15 @@ class Documenter:
 		this_id = "d_" + self.id(something)
 		if self._contents.get(this_id) != None: return self._contents.get(this_id)
 		result = "<div id='%s' class='description'>" % (this_id)
-		result += "<h1>%s</h1>" % (describeType(something))
+		result += "<h1>%s</h1>" % (self.describeType(something))
 		result += "<div class='representation'>"
 		result += self.representation(something)
 		result += "</div>"
 		result += "<div class='docstring'>"
-		if hasattr(something, "__doc__") and something.__doc__:
+		if self._hasDocumentation(something):
 			if kiwi and kiwi.main:
 				# We correct the first line indentation of the text if necessary
-				docstring = something.__doc__
+				docstring = self._getDocumentation(something)
 				first_line_indent = kiwi.core.Parser.getIndentation(docstring[:docstring.find("\n")])
 				text_indent = kiwi.core.Parser.getIndentation(docstring)
 				docstring = " " * (text_indent - first_line_indent)  + docstring
@@ -339,7 +309,7 @@ class Documenter:
 				s.close()
 				result += r
 			else:
-				result += "%s" % (html_escape(something.__doc__))
+				result += "%s" % (html_escape(self._getDocumentation(something)))
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
@@ -358,11 +328,13 @@ class Documenter:
 		self._path.pop()
 		self._visited[this_id] = True
 		return result
+
 	
 	def documentModule( self, name ):
 		"""This is the main function you should call to document a module. You
 		simply have to give the module name, and that's all."""
 		module = None
+		# FIXME: Abstract this (like _resolveModule)
 		try:
 			exec "import %s as module" % (name)
 			log("Documenting '%s'" % (name))
@@ -415,11 +387,11 @@ class Documenter:
 						group_printed = True
 					child_id = self.id(child)
 					try:
-						is_documented = getattr(child, "__doc__") and "documented" or "undocumented"
+						is_documented = self._getDocumentation(child) and "documented" or "undocumented"
 					except:
 						is_documented = False
 					link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
-					type_name = typeToName(child)
+					type_name = self.typeToName(child)
 					prefix = "&sdot;"
 					if type_name == KEY_METHOD: prefix = "&fnof;"
 					if type_name == KEY_FUNCTION: prefix = "&lambda;"
@@ -446,9 +418,80 @@ class Documenter:
 		result += "</div>"
 		self._contents[this_id] = result
 		return result
-	
+
+	def _hasDocumentation( self, something ):
+		return hasattr(something, "__doc__") and something.__doc__
+
+	def _getDocumentation( self, something ):
+		return getattr(something, "__doc__") 
+
 	def _getAttribute( self, o, name ):
 		return getattr(o, name)
+
+	def _getName( self, something ):
+		return something.__name__
+
+	def _getOwnSlotsNames( self, something ):
+		return something.__dict__
+
+	def _getAllSlotsNames( self, something ):
+		return dir(something)
+
+	def _describeFunction( self, function ):
+		"""Utility function that returns an HTML representation of the function
+		prototype."""
+		if hasattr(function, "im_func"): function = function.im_func
+		try:
+			defaults = function.func_defaults
+			code     = function.func_code
+		except:
+			return ""
+		args = list(code.co_varnames[:code.co_argcount])
+		# We split the args in args / default_args
+		if defaults:
+			default_args = args[-len(defaults):]
+			args         = args[:-len(defaults)]
+		else:
+			default_args = []
+		# We add the default arguments (properly formatted) to the arguments
+		# list
+		for i in range(len(default_args)):
+			d = default_args[i]
+			args.append("%s=%s" % (d, repr(defaults[i])) )
+		# We append the arguments
+		if code.co_flags & 0x0004: # CO_VARARGS
+			args.append('*'+code.co_varnames[len(args)])
+		if code.co_flags & 0x0008: # CO_VARKEYWORDS
+			args.append('**'+code.co_varnames[len(args)])
+		return "<code>%s( %s )</code>" % (function.__name__, ", ".join(map(str,args)))
+
+	def typeToName( self, a_value ):
+		"""Normalizes the given type to a name. Basically, this will return either
+		'Module', 'Class', 'Function' or 'Value'."""
+		a_type = type(a_value)
+		if a_type == types.ModuleType: return KEY_MODULE
+		elif a_type == types.ClassType: return KEY_CLASS
+		elif a_type  == types.FunctionType: return KEY_FUNCTION
+		elif a_type in (types.MethodType, types.UnboundMethodType): return KEY_METHOD
+		elif repr(a_value).startswith("<class '"): return KEY_CLASS
+		else: return KEY_VALUE
+
+	def describeType( self, value ):
+		"""Gives a detailed, human-readable string describing the given type."""
+		a_type = self.typeToName(value)
+		name = lambda o:"<span class='name'>%s</span>" % (o.__name__)
+		if a_type == KEY_MODULE:
+			return "Module " + name(value)
+		if a_type == KEY_CLASS:
+			return "Class " + name(value)
+		if a_type == KEY_FUNCTION:
+			return "Function " + name(value)
+		if a_type == KEY_METHOD:
+			return "Method " + name(value)
+		if a_type == KEY_PARENT:
+			return "Parent " + name(value)
+		else:
+			return type(value).__name__
 
 	def toHTML( self, title ):
 		template_f = file(os.path.dirname(os.path.abspath(sdoc.__file__)) + "/sdoc.tmpl", "rt")
@@ -463,6 +506,92 @@ class Documenter:
 			DESCRIPTIONS = "".join(self._descriptions),
 			TITLE        = title
 		)
+
+class LambdaFactoryDocumenter(Documenter):
+	"""This is the class that is responsible for producing the documentation for
+	the given lambda-factory based objects.
+	
+	See <http://www.ivy.fr/lambdafactory> for more details on that."""
+
+	def __init__( self, modules=None, encoding='utf-8' ):
+		Documenter.__init__(self, modules, encoding)
+		if not lambdafactory:
+			raise ImportError("Lambda factory is required: <http://www.ivy.fr/lambdafactory>")
+
+	def documentModule( self, module, name="Unnamed" ):
+		"""This is the main function you should call to document a module. You
+		simply have to give the module name, and that's all."""
+		assert isinstance(module, lambdafactory.interfaces.IModule)
+		self._currentModule = module
+		self._modules.append(module)
+		self.document(name, module, 0)
+		if self._modulesNavigation: self._modulesNavigation += " &bull; "
+		else: self._modulesNavigation = "API : "
+		self._modulesNavigation += \
+		  "<a href='javascript:documentElement(\"%s\");'>%s</a>" \
+		  % (self.id(module), name)
+
+	def _hasDocumentation( self, something ):
+		return something.hasDocumentation()
+
+	def _getDocumentation( self, something ):
+		return something.getDocumentation()
+
+	def _getAttribute( self, o, name ):
+		return o.getSlot(name)
+
+	def _getName( self, something ):
+		return something.getName()
+
+	def _getOwnSlotsNames( self, something ):
+		return [name for name,_ in something.getSlots()]
+
+	def _getAllSlotsNames( self, something ):
+		# FIXME: Bad, bad, bad !
+		return [name for name,_ in something.getSlots()]
+
+	def _describeFunction( self, function ):
+		"""Utility function that returns an HTML representation of the function
+		prototype."""
+		name = function.getName()
+		args = [a.getReferenceName() for a in function.getArguments()]
+		return "<code>%s( %s )</code>" % (name,  ", ".join(args))
+
+	def _isExternalValue( self, value ):
+		"""Tells if the given value is defined in an external module or not."""
+		return False
+
+	def _keysByTypeHelper( self, keysbytype, value ):
+		"""Nothing to be done here."""
+		return
+
+	def typeToName( self, a_value ):
+		"""Normalizes the given type to a name. Basically, this will return either
+		'Module', 'Class', 'Function' or 'Value'."""
+		lif = lambdafactory.interfaces
+		if   isinstance(a_value, lif.IModule): return KEY_MODULE
+		elif isinstance(a_value, lif.IClass): return KEY_CLASS
+		elif isinstance(a_value, lif.IMethod): return KEY_METHOD
+		elif isinstance(a_value, lif.IFunction): return KEY_FUNCTION
+		else: return KEY_VALUE
+
+	def describeType( self, value ):
+		"""Gives a detailed, human-readable string describing the given type."""
+		a_type = self.typeToName(value)
+		name = lambda o:"<span class='name'>%s</span>" % (o)
+		if a_type == KEY_MODULE:
+			return "Module " + name(value.getName())
+		if a_type == KEY_CLASS:
+			return "Class " + name(value.getName())
+		if a_type == KEY_FUNCTION:
+			return "Function " + name(value.getName())
+		if a_type == KEY_METHOD:
+			return "Method " + name(value.getName())
+		if a_type == KEY_PARENT:
+			# TODO
+			return "Parent " + name(value)
+		else:
+			return value.__class__.__name__
 
 # ------------------------------------------------------------------------------
 #
