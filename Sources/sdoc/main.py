@@ -8,8 +8,11 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 01-Nov-2006
+# Last mod  : 03-Nov-2006
 # -----------------------------------------------------------------------------
+
+# FIXME: Does not seem to work well with multiple inheritance/interfaces
+# inheritance
 
 # TODO: Optimize by using a StringIO instead of concateating strings
 # TODO: Use paths and not the 'id' function to identify the different objects
@@ -36,7 +39,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.4.4"
+__version__ = "0.5.0"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -52,8 +55,18 @@ KEY_CLASS     = "Classes"
 KEY_FUNCTION  = "Functions"
 KEY_METHOD    = "Methods"
 KEY_VALUE     = "Values"
+KEY_PARENT    = "Bases"
 MOD_INHERITED = "Inherited"
-KEYS_ORDER    = (KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KEY_VALUE)
+KEYS_ORDER    = (KEY_PARENT, KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KEY_VALUE)
+# Special attributes are keys that are represented differently. The key is the
+# name of the attributes within the Python object, the value is the displayed
+# name (as a string), or a function that will transform the value into a string
+# that will be displayed (as the __bases__ illustrates it)
+def format_classParents(parents):
+	if not parents:
+		return "Base class"
+	else:
+		return ", ".join(map(lambda c:c.__name__, parents))
 SPECIAL_ATTRIBUTES = {
 	"__init__":"constructor",
 	"__cmp__":"compare to",
@@ -62,7 +75,8 @@ SPECIAL_ATTRIBUTES = {
 	"__getitem__":"get item",
 	"__setitem__":"set item",
 	"__len__":"length",
-	"__iter__":"iterator"
+	"__iter__":"iterator",
+	"__bases__":format_classParents
 }
 
 COMPACT = {
@@ -163,6 +177,8 @@ def describeType( value ):
 		return "Function " + name(value)
 	if a_type == KEY_METHOD:
 		return "Method " + name(value)
+	if a_type == KEY_PARENT:
+		return "Parent " + name(value)
 	else:
 		return type(value).__name__
 
@@ -234,6 +250,10 @@ class Documenter:
 				continue
 			values = result.setdefault(mod + typeToName(value), [])
 			values.append(key)
+		# If the something is a class, we add class-specific attributes which
+		# are not detected by "dir()" by default
+		if type(something) == types.ClassType:
+			result.setdefault(KEY_PARENT, []).append("__bases__")
 		# Then, for a particular type, we sort the items
 		for key, values in result.items():
 			values.sort(self._sortAlphabetically)
@@ -308,7 +328,7 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if hasattr(something, "__doc__") and something.__doc__:
-			if kiwi.main:
+			if kiwi and kiwi.main:
 				# We correct the first line indentation of the text if necessary
 				docstring = something.__doc__
 				first_line_indent = kiwi.core.Parser.getIndentation(docstring[:docstring.find("\n")])
@@ -346,7 +366,7 @@ class Documenter:
 		try:
 			exec "import %s as module" % (name)
 			log("Documenting '%s'" % (name))
-		except ImportError, e:
+		except Exception, e:
 			self._error("Cannot import module '%s'\n%s" % (name,e))
 			return
 		assert module
@@ -406,8 +426,15 @@ class Documenter:
 					if type_name == KEY_CLASS: prefix = "&Tau;"
 					if attribute.upper() == attribute: prefix = "&bull;"
 					if attribute in SPECIAL_ATTRIBUTES:
+						# Special attribute values are either strings or
+						# functions that convert the child value to a string
+						# (which is the case for __bases__, for instance)
+						label = SPECIAL_ATTRIBUTES[attribute]
+						if type(label) not in (str, unicode):
+							label = label(child)
+							if label == None: continue
 						prefix = "&equiv;"
-						attribute =  "<span class='special'>%s</span>" % (SPECIAL_ATTRIBUTES[attribute])
+						attribute =  "<span class='special'>%s</span>" % (label)
 					result += """<span class='%s'><span class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented, prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
@@ -455,7 +482,7 @@ JavaScript-based documentation that have a SmallTalk feel. It is inspired from
 the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 
 See <http://www.ivy.fr/sdoc> for more information."""
-USAGE          = "%prog [options] module.py module.name ..."
+USAGE          = "%prog [options] module.py module.name ... [output file]"
 
 def run( args ):
 	"""Runs SDoc as a command line tool"""
