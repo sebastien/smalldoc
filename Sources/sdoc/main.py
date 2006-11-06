@@ -39,7 +39,7 @@ try:
 except ImportError:
 	kiwi = None
 
-__version__ = "0.5.0"
+__version__ = "0.5.1"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -64,7 +64,7 @@ KEYS_ORDER    = (KEY_PARENT, KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KE
 # that will be displayed (as the __bases__ illustrates it)
 def format_classParents(parents):
 	if not parents:
-		return "Base class"
+		return "<i>Base class</i>"
 	else:
 		return ", ".join(map(lambda c:c.__name__, parents))
 SPECIAL_ATTRIBUTES = {
@@ -434,7 +434,7 @@ class Documenter:
 							label = label(child)
 							if label == None: continue
 						prefix = "&equiv;"
-						attribute =  "<span class='special'>%s</span>" % (label)
+						attribute =  "<span class='special %s'>%s</span>" % (attribute, label)
 					result += """<span class='%s'><span class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented, prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
