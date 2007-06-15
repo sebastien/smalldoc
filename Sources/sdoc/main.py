@@ -85,6 +85,9 @@ SPECIAL_ATTRIBUTES = {
 	"__setitem__":"set item",
 	"__len__":"length",
 	"__iter__":"iterator",
+	"__call__":"when invoked",
+	"__str__":"string conversion",
+	"__repr__":"string repr",
 	"__bases__":format_classParents
 }
 
@@ -535,7 +538,7 @@ class LambdaFactoryDocumenter(Documenter):
 		return something.hasDocumentation()
 
 	def _getDocumentation( self, something ):
-		return something.getDocumentation()
+		return something.getDocumentation().getContent()
 
 	def _getAttribute( self, o, name ):
 		return o.getSlot(name)
