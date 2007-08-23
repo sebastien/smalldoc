@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.5
 # Encoding: iso-8859-1
 # vim: tw=80 ts=4 sw=4 noet
 # -----------------------------------------------------------------------------
