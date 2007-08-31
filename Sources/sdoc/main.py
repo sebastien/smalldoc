@@ -535,7 +535,7 @@ class LambdaFactoryDocumenter(Documenter):
 		  % (self.id(module), name)
 
 	def _hasDocumentation( self, something ):
-		return something.hasDocumentation()
+		return something.getDocumentation()
 
 	def _getDocumentation( self, something ):
 		return something.getDocumentation().getContent()
