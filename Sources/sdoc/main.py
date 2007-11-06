@@ -521,18 +521,18 @@ class LambdaFactoryDocumenter(Documenter):
 		if not lambdafactory:
 			raise ImportError("Lambda factory is required: <http://www.ivy.fr/lambdafactory>")
 
-	def documentModule( self, module, name="Unnamed" ):
+	def documentModule( self, module, name=None ):
 		"""This is the main function you should call to document a module. You
 		simply have to give the module name, and that's all."""
 		assert isinstance(module, lambdafactory.interfaces.IModule)
 		self._currentModule = module
 		self._modules.append(module)
-		self.document(name, module, 0)
+		self.document(name or module.getName(), module, 0)
 		if self._modulesNavigation: self._modulesNavigation += " &bull; "
 		else: self._modulesNavigation = "API : "
 		self._modulesNavigation += \
 		  "<a href='javascript:documentElement(\"%s\");'>%s</a>" \
-		  % (self.id(module), name)
+		  % (self.id(module), name or module.getName())
 
 	def _hasDocumentation( self, something ):
 		return something.getDocumentation()
