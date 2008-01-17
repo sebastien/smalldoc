@@ -312,7 +312,7 @@ class Documenter:
 				s.close()
 				result += r
 			else:
-				result += "%s" % (html_escape(self._getDocumentation(something)))
+				result += "%s".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
@@ -410,7 +410,8 @@ class Documenter:
 							if label == None: continue
 						prefix = "&equiv;"
 						attribute =  "<span class='special %s'>%s</span>" % (attribute, label)
-					result += """<span class='%s'><span class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented, prefix, link, attribute)
+					result += """<span class='%s'><span
+					class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented and "documented" or "undocumented", prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
 					if t: self._contents[child_id] = t
