@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 06-Nov-2006
+# Last mod  : 23-Jan-2008
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
@@ -48,7 +48,7 @@ try:
 except ImportError:
 	lambdafactory = None
 
-__version__ = "0.5.5"
+__version__ = "0.5.6"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules."""
@@ -59,14 +59,31 @@ listed Python modules."""
 #
 # ------------------------------------------------------------------------------
 
-KEY_MODULE    = "Modules"
-KEY_CLASS     = "Classes"
-KEY_FUNCTION  = "Functions"
-KEY_METHOD    = "Methods"
-KEY_VALUE     = "Values"
-KEY_PARENT    = "Bases"
-MOD_INHERITED = "Inherited"
-KEYS_ORDER    = (KEY_PARENT, KEY_MODULE, KEY_CLASS, KEY_METHOD, KEY_FUNCTION, KEY_VALUE)
+KEY_MODULE          = "Modules"
+KEY_CLASS           = "Classes"
+KEY_FUNCTION        = "Functions"
+KEY_METHOD          = "Methods"
+KEY_CONSTRUCTOR     = "Constructor"
+KEY_CLASS_METHOD    = "Class Methods"
+KEY_CLASS_ATTRIBUTE = "Class Attribute"
+KEY_ATTRIBUTE       = "Attributes"
+KEY_VALUE           = "Values"
+KEY_PARENT          = "Bases"
+MOD_INHERITED       = "Inherited"
+
+KEYS_ORDER = (
+	KEY_PARENT,
+	KEY_MODULE,
+	KEY_CLASS,
+	KEY_CONSTRUCTOR,
+	KEY_CLASS_ATTRIBUTE,
+	KEY_CLASS_METHOD,
+	KEY_ATTRIBUTE,
+	KEY_METHOD,
+	KEY_FUNCTION,
+	KEY_VALUE
+)
+
 # Special attributes are keys that are represented differently. The key is the
 # name of the attributes within the Python object, the value is the displayed
 # name (as a string), or a function that will transform the value into a string
@@ -76,6 +93,7 @@ def format_classParents(parents):
 		return "<i>Base class</i>"
 	else:
 		return ", ".join(map(lambda c:c.__name__, parents))
+
 SPECIAL_ATTRIBUTES = {
 	"__init__":"constructor",
 	"__cmp__":"compare to",
@@ -103,6 +121,7 @@ COMPACT = {
 	"title"         : "t",
 	"undocumented"  : "u"
 }
+
 RE_SPACES = re.compile("\s*\n\s*\n+")
 def html_escape( text ):
 	return RE_SPACES.sub("<br />", str(text).replace("<", "&lt;").replace(">",
@@ -357,7 +376,7 @@ class Documenter:
 	def list( self, name, something, level=0 ):
 		"""Returns a layer containing the list of fields in this object. This
 		implies that this object can be "dir'ed", and returns True when given to
-		the @Documenter.recurse method."""
+		the 'Documenter.recurse' method."""
 		# If the object was alredy visited, we skip it and return an empty
 		# string
 		this_id = self.id(something)
@@ -396,7 +415,7 @@ class Documenter:
 					link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
 					type_name = self.typeToName(child)
 					prefix = "&sdot;"
-					if type_name == KEY_METHOD: prefix = "&fnof;"
+					if type_name in (KEY_CLASS_METHOD, KEY_METHOD): prefix = "&fnof;"
 					if type_name == KEY_FUNCTION: prefix = "&lambda;"
 					if type_name == KEY_CLASS: prefix = "&Tau;"
 					if attribute.upper() == attribute: prefix = "&bull;"
@@ -410,8 +429,12 @@ class Documenter:
 							if label == None: continue
 						prefix = "&equiv;"
 						attribute =  "<span class='special %s'>%s</span>" % (attribute, label)
-					result += """<span class='%s'><span
-					class='prefix'>%s</span><a %s>%s</a></span><br />""" % (is_documented and "documented" or "undocumented", prefix, link, attribute)
+					elif attribute.startswith("__"):
+						attribute =  "<span class='private'>%s</span>" % ( attribute)
+					elif attribute.startswith("_"):
+						attribute =  "<span class='protected'>%s</span>" % ( attribute)
+					result += """<div class='slot %s'><span
+					class='prefix'>%s</span><a %s>%s</a></div>""" % (is_documented and "documented" or "undocumented", prefix, link, attribute)
 					# We document the child attribute
 					t = self.document(attribute, child, level + 1)
 					if t: self._contents[child_id] = t
@@ -575,8 +598,12 @@ class LambdaFactoryDocumenter(Documenter):
 		lif = lambdafactory.interfaces
 		if   isinstance(a_value, lif.IModule): return KEY_MODULE
 		elif isinstance(a_value, lif.IClass): return KEY_CLASS
+		elif isinstance(a_value, lif.IConstructor): return KEY_CONSTRUCTOR
+		elif isinstance(a_value, lif.IClassMethod): return KEY_METHOD
 		elif isinstance(a_value, lif.IMethod): return KEY_METHOD
 		elif isinstance(a_value, lif.IFunction): return KEY_FUNCTION
+		elif isinstance(a_value, lif.IClassAttribute): return KEY_CLASS_ATTRIBUTE
+		elif isinstance(a_value, lif.IAttribute): return KEY_ATTRIBUTE
 		else: return KEY_VALUE
 
 	def describeType( self, value ):
