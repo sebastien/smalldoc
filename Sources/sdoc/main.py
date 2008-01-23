@@ -599,7 +599,7 @@ class LambdaFactoryDocumenter(Documenter):
 		if   isinstance(a_value, lif.IModule): return KEY_MODULE
 		elif isinstance(a_value, lif.IClass): return KEY_CLASS
 		elif isinstance(a_value, lif.IConstructor): return KEY_CONSTRUCTOR
-		elif isinstance(a_value, lif.IClassMethod): return KEY_METHOD
+		elif isinstance(a_value, lif.IClassMethod): return KEY_CLASS_METHOD
 		elif isinstance(a_value, lif.IMethod): return KEY_METHOD
 		elif isinstance(a_value, lif.IFunction): return KEY_FUNCTION
 		elif isinstance(a_value, lif.IClassAttribute): return KEY_CLASS_ATTRIBUTE
