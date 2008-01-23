@@ -63,6 +63,15 @@ pre {
 	color: white;
 }
 
+#options {
+	text-align: right;
+}
+
+#options label {
+	font-weight: bold;
+	padding-left: 10px;
+}
+
 #api {
 	display: block;
 	width: 360px;
@@ -177,7 +186,9 @@ pre {
 /* css-classes-snip */
 </style>
 <!-- snip-snip-snip-snip-snip-snip -->
+<script type="text/javascript" src="http://jqueryjs.googlecode.com/files/jquery-1.2.2.pack.js" > </script>
 <script type="text/javascript">
+/* <![CDATA[ */
 // javascript-snip
 
 var displays    = [];
@@ -249,7 +260,35 @@ function describeElement( eid )
 		alert("ERROR: Description not found for id 'd_" + eid + "'");
 	}
 }
+
+var J = jQuery
+
+function updatePrivateVisibility () {
+	/* FIXME: Use proper class instead */
+	if ( J(".do-togglePrivate").attr("checked") ) {
+		J(".private").parent().parent().fadeIn()
+	} else {
+		J(".private").parent().parent().fadeOut()
+	}
+}
+
+function updateProtectedVisibility () {
+	if ( J(".do-toggleProtected").attr("checked") ) {
+		J(".protected").parent().parent().fadeIn()
+	} else {
+		J(".protected").parent().parent().fadeOut()
+	}
+}
+
+jQuery(document).ready(function(){
+	J(".do-togglePrivate").click(updatePrivateVisibility)
+	J(".do-toggleProtected").click(updateProtectedVisibility)
+	updatePrivateVisibility()
+	updateProtectedVisibility()
+})
+
 // javascript-snip
+/* ]]> */
 <!-- snip-snip-snip-snip-snip-snip -->
 </script>
 </head>
@@ -259,6 +298,11 @@ function describeElement( eid )
 <div id='modules'>
 <!-- modules-snip -->
 $MODULES
+<div id='options'>
+	<label>Show:</label>
+	<input type="checkbox" class="do-togglePrivate"> private
+	<input type="checkbox" class="do-toggleProtected"> protected
+</div>
 <!-- modules-snip -->
 </div>
 <div id='api'><!-- main element will be displayed here --></div>
