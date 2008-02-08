@@ -351,7 +351,6 @@ class Documenter:
 		self._visited[this_id] = True
 		return result
 
-	
 	def documentModule( self, name ):
 		"""This is the main function you should call to document a module. You
 		simply have to give the module name, and that's all."""
@@ -534,6 +533,12 @@ class Documenter:
 			TITLE        = title
 		)
 
+# ------------------------------------------------------------------------------
+#
+# LAMBDA FACTORY DOCUMENTER
+#
+# ------------------------------------------------------------------------------
+
 class LambdaFactoryDocumenter(Documenter):
 	"""This is the class that is responsible for producing the documentation for
 	the given lambda-factory based objects.
@@ -580,9 +585,20 @@ class LambdaFactoryDocumenter(Documenter):
 	def _describeFunction( self, function ):
 		"""Utility function that returns an HTML representation of the function
 		prototype."""
-		name = function.getName()
-		args = [a.getReferenceName() for a in function.getArguments()]
-		return "<code>%s( %s )</code>" % (name,  ", ".join(args))
+		name = function.getAbsoluteName().replace(".", " ").split()
+		prefix = name[:-1]
+		suffix = name[-1]
+		name = "<span class='module-prefix'>%s</span> <span class='name'>%s</span>" % (".".join(prefix), suffix)
+		args = []
+		for arg in function.getArguments():
+			a = arg.getName()
+			if arg.getTypeDescription(): a += ":" + arg.getTypeDescription()
+			# FIXME: Should translate the value back to Sugar
+			if arg.isOptional(): a+="="+str(arg.getDefaultValue()) 
+			if arg.isRest(): a+="..."
+			if arg.isKeywordsRest(): a+="=..."
+			args.append(a)
+		return "<code>%s (<span class='function-arguments'>%s</span> )</code>" % (name,  ", ".join(args))
 
 	def _isExternalValue( self, value ):
 		"""Tells if the given value is defined in an external module or not."""
@@ -591,6 +607,16 @@ class LambdaFactoryDocumenter(Documenter):
 	def _keysByTypeHelper( self, keysbytype, value ):
 		"""Nothing to be done here."""
 		return
+
+	def representation( self, something ):
+		"""Gives the Sugar-representation of the given object."""
+		lif = lambdafactory.interfaces
+		if isinstance(something, lif.IFunction):
+			return self._describeFunction(something)
+		if type(something) in (tuple, list, dict, unicode, str):
+			return "<code>%s</code>" % (html_escape(repr(something)))
+		else:
+			return ""
 
 	def typeToName( self, a_value ):
 		"""Normalizes the given type to a name. Basically, this will return either
