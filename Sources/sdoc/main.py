@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 23-Jan-2008
+# Last mod  : 23-Nov-2008
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
@@ -188,6 +188,7 @@ class Documenter:
 		self._path              = []
 		self._errors            = []
 		self._encoding          = encoding
+		self._markup            = None
 		if type(modules) in (str, unicode): self._acceptedModules.append(modules)
 		elif modules: self._acceptedModules.extend(modules)
 
@@ -320,7 +321,7 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if self._hasDocumentation(something):
-			if kiwi and kiwi.main:
+			if self._markup == "kiwi" and kiwi and kiwi.main:
 				# We correct the first line indentation of the text if necessary
 				docstring = self._getDocumentation(something)
 				first_line_indent = kiwi.core.Parser.getIndentation(docstring[:docstring.find("\n")])
@@ -331,7 +332,7 @@ class Documenter:
 				s.close()
 				result += r
 			else:
-				result += "%s".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
+				result += "<pre>%s</pre>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
@@ -659,6 +660,7 @@ class LambdaFactoryDocumenter(Documenter):
 OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
 OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
 OPT_COMPACT    = "Outputs a compact HTML (slower)"
+OPT_MARKUP     = "Uses the given markup ('none', 'rst' or 'kiwi') to process docstrings"
 OPT_BODY       = "Only outputs the HTML document body."""
 OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
 OPT_ENCODING   = "Specifies the encoding of the strings found in the given modules"
@@ -683,6 +685,8 @@ def run( args ):
 		help=OPT_ACCEPTS)
 	oparser.add_option("-c", "--compact", action="store_true", dest="compact",
 		help=OPT_COMPACT)
+	oparser.add_option("-m", "--markup", action="store", dest="markup",
+		help=OPT_MARKUP)
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
 		help=OPT_BODY)
 	oparser.add_option("-t", "--title", dest="title",
@@ -692,6 +696,7 @@ def run( args ):
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
 	documenter   = Documenter(options.accepts, encoding=options.encoding)
+	documenter._markup = options.markup
 	# We modify the sys.path
 	if options.pythonpath:
 		options.pythonpath.reverse()
