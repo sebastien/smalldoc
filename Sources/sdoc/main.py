@@ -548,6 +548,7 @@ class LambdaFactoryDocumenter(Documenter):
 
 	def __init__( self, modules=None, encoding='utf-8' ):
 		Documenter.__init__(self, modules, encoding)
+		self._markup = "kiwi"
 		if not lambdafactory:
 			raise ImportError("Lambda factory is required: <http://www.ivy.fr/lambdafactory>")
 
