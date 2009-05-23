@@ -367,10 +367,12 @@ class Documenter:
 		self._currentModule = module
 		self._modules.append(module)
 		self.document(name, module, 0)
-		if self._modulesNavigation: self._modulesNavigation += " &bull; "
-		else: self._modulesNavigation = "API : "
+		if not self._modulesNavigation:
+			self._modulesNavigation  = "<div class='container'><div class='name'>$TITLE</div>"
+			self._modulesNavigation += "<div class='title'>Modules</div>"
+			self._modulesNavigation += "<ul class='group'>"
 		self._modulesNavigation += \
-		  "<a href='javascript:documentElement(\"%s\");'>%s</a>" \
+		  "<li><span class='prefix'>M</span><a href='javascript:documentElement(\"%s\");'>%s</a><li>" \
 		  % (self.id(module), name)
 
 	def list( self, name, something, level=0 ):
@@ -526,9 +528,13 @@ class Documenter:
 		template_f.close()
 		# We fill the template
 		if not self._modules: return ""
+		if self._modulesNavigation:
+			modules_nav = self._modulesNavigation + "</ul></div>"
+		else:
+			modules_nav = ""
 		return template.substitute(
 			MAIN         = self.id(self._modules[0]),
-			MODULES      = self._modulesNavigation,
+			MODULES      = modules_nav,
 			CONTENT      = "".join(self._contents.values()),
 			DESCRIPTIONS = "".join(self._descriptions),
 			TITLE        = title
@@ -559,10 +565,12 @@ class LambdaFactoryDocumenter(Documenter):
 		self._currentModule = module
 		self._modules.append(module)
 		self.document(name or module.getName(), module, 0)
-		if self._modulesNavigation: self._modulesNavigation += " &bull; "
-		else: self._modulesNavigation = "API : "
+		if not self._modulesNavigation:
+			self._modulesNavigation  = "<div class='container'><div class='name'>$TITLE</div>"
+			self._modulesNavigation += "<div class='title'>Modules</div>"
+			self._modulesNavigation += "<ul class='group'>"
 		self._modulesNavigation += \
-		  "<a href='javascript:documentElement(\"%s\");'>%s</a>" \
+		  "<li><span class='prefix'>M</span><a href='javascript:documentElement(\"%s\");'>%s</a><li>" \
 		  % (self.id(module), name or module.getName())
 
 	def _hasDocumentation( self, something ):
