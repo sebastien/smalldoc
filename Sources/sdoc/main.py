@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 23-Nov-2008
+# Last mod  : 03-Oct-2008
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
@@ -500,6 +500,7 @@ class Documenter:
 		a_type = type(a_value)
 		if a_type == types.ModuleType: return KEY_MODULE
 		elif a_type == types.ClassType: return KEY_CLASS
+		elif a_type == types.TypeType: return KEY_CLASS
 		elif a_type  == types.FunctionType: return KEY_FUNCTION
 		elif a_type in (types.MethodType, types.UnboundMethodType): return KEY_METHOD
 		elif repr(a_value).startswith("<class '"): return KEY_CLASS
