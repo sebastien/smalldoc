@@ -8,7 +8,7 @@
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 30-Mar-2006
-# Last mod  : 23-Nov-2008
+# Last mod  : 03-Oct-2008
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
@@ -208,8 +208,11 @@ class Documenter:
 			return a
 		return cmp(f(a), f(b))
 
-	def _isExternalValue( self, value ):
+	def _isExternalValue( self, value, parent=None ):
 		"""Tells if the given value is defined in an external module or not."""
+		# TypeType children are assumed to be always internal
+		if parent and type(parent) == types.TypeType:
+			return False
 		if hasattr(value, "__module__") and \
 		not getattr(value, "__module__") == self._currentModule.__name__:
 			# TODO: We should tell that this module imports another one,
@@ -241,7 +244,7 @@ class Documenter:
 			# FIXME: Abstract this
 			# We check if the value should be taken into account, that is we
 			# ensure that the function or class belongs to the current module.
-			if self._isExternalValue(value):
+			if self._isExternalValue(value, something):
 				continue
 			values = result.setdefault(mod + self.typeToName(value), [])
 			values.append(key)
@@ -500,6 +503,7 @@ class Documenter:
 		a_type = type(a_value)
 		if a_type == types.ModuleType: return KEY_MODULE
 		elif a_type == types.ClassType: return KEY_CLASS
+		elif a_type == types.TypeType: return KEY_CLASS
 		elif a_type  == types.FunctionType: return KEY_FUNCTION
 		elif a_type in (types.MethodType, types.UnboundMethodType): return KEY_METHOD
 		elif repr(a_value).startswith("<class '"): return KEY_CLASS
