@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.5
+#!/usr/bin/env python
 # Encoding: iso-8859-1
 # vim: tw=80 ts=4 sw=4 noet
 # -----------------------------------------------------------------------------
@@ -36,11 +36,11 @@ import sdoc
 
 # Kiwi support allows to expand the markup within SDoc
 try:
-	import kiwi.main 
-	import kiwi.core
+	import texto.main 
+	import texto.core
 	import StringIO
 except ImportError:
-	kiwi = None
+	texto = None
 
 # LambdaFactory allows to generate SDoc documentation from any program model
 try:
@@ -321,14 +321,14 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if self._hasDocumentation(something):
-			if self._markup == "kiwi" and kiwi and kiwi.main:
+			if self._markup == "texto" and texto and texto.main:
 				# We correct the first line indentation of the text if necessary
 				docstring = self._getDocumentation(something)
-				first_line_indent = kiwi.core.Parser.getIndentation(docstring[:docstring.find("\n")])
-				text_indent = kiwi.core.Parser.getIndentation(docstring)
+				first_line_indent = texto.core.Parser.getIndentation(docstring[:docstring.find("\n")])
+				text_indent = texto.core.Parser.getIndentation(docstring)
 				docstring = " " * (text_indent - first_line_indent)  + docstring
 				s = StringIO.StringIO(docstring)
-				_, r = kiwi.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
+				_, r = texto.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
 				s.close()
 				result += r
 			else:
@@ -554,7 +554,7 @@ class LambdaFactoryDocumenter(Documenter):
 
 	def __init__( self, modules=None, encoding='utf-8' ):
 		Documenter.__init__(self, modules, encoding)
-		self._markup = "kiwi"
+		self._markup = "texto"
 		if not lambdafactory:
 			raise ImportError("Lambda factory is required: <http://www.ivy.fr/lambdafactory>")
 
@@ -669,7 +669,7 @@ class LambdaFactoryDocumenter(Documenter):
 OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
 OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
 OPT_COMPACT    = "Outputs a compact HTML (slower)"
-OPT_MARKUP     = "Uses the given markup ('none', 'rst' or 'kiwi') to process docstrings"
+OPT_MARKUP     = "Uses the given markup ('none', 'rst' or 'texto') to process docstrings"
 OPT_BODY       = "Only outputs the HTML document body."""
 OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
 OPT_ENCODING   = "Specifies the encoding of the strings found in the given modules"
