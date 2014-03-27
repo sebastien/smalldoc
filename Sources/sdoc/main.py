@@ -36,7 +36,7 @@ import sdoc
 
 # Kiwi support allows to expand the markup within SDoc
 try:
-	import texto.main 
+	import texto.main
 	import texto.core
 	import StringIO
 except ImportError:
@@ -192,7 +192,6 @@ class Documenter:
 		if type(modules) in (str, unicode): self._acceptedModules.append(modules)
 		elif modules: self._acceptedModules.extend(modules)
 
-
 	def _error( self, message ):
 		"""Logs an error in this documenter."""
 		self._errors.append(message)
@@ -223,7 +222,7 @@ class Documenter:
 	def _keysByTypeHelper( self, keysbytype, value ):
 		"""This function may be called to enrich the keysByType result with
 		additional keys and values.
-		
+
 		This hook was added specifically for Python dir() method not listing the
 		`__bases__` attribute of class objects, which is necessary."""
 		# If the something is a class, we add class-specific attributes which
@@ -306,7 +305,7 @@ class Documenter:
 		types.UnboundMethodType):
 			return self._describeFunction(something)
 		if type(something) in (tuple, list, dict, unicode, str):
-			return "<code>%s</code>" % (html_escape(repr(something)))
+			return self._formatLiteral(something)
 		else:
 			return ""
 
@@ -315,32 +314,7 @@ class Documenter:
 		attribute in the object, otherwise returns its type and representation.
 		This returns a div with a title and paragraph.This is a rather long
 		text."""
-		this_id = "d_" + self.id(something)
-		if self._contents.get(this_id) != None: return self._contents.get(this_id)
-		result = "<div id='%s' class='description'>" % (this_id)
-		result += "<h1>%s</h1>" % (self.describeType(something))
-		result += "<div class='representation'>"
-		result += self.representation(something)
-		result += "</div>"
-		result += "<div class='docstring'>"
-		if self._hasDocumentation(something):
-			if self._markup == "texto" and texto and texto.main:
-				# We correct the first line indentation of the text if necessary
-				docstring = self._getDocumentation(something)
-				first_line_indent = texto.core.Parser.getIndentation(docstring[:docstring.find("\n")])
-				text_indent = texto.core.Parser.getIndentation(docstring)
-				docstring = " " * (text_indent - first_line_indent)  + docstring
-				s = StringIO.StringIO(docstring)
-				_, r = texto.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
-				s.close()
-				result += r
-			else:
-				result += "<pre>%s</pre>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
-		else:
-			result += "<span class='undocumented'>Undocumented</span>"
-		result += "</div></div>"
-		self._contents[this_id] = result
-		return result
+		return self._formatObject(something)
 
 	def document( self, name, something, level=0 ):
 		"""Document the given element, which has the given name."""
@@ -369,14 +343,8 @@ class Documenter:
 		assert module
 		self._currentModule = module
 		self._modules.append(module)
+		_formatModule (name, module)
 		self.document(name, module, 0)
-		if not self._modulesNavigation:
-			self._modulesNavigation  = "<div class='container'><div class='name'>$TITLE</div>"
-			self._modulesNavigation += "<div class='title'>Modules</div>"
-			self._modulesNavigation += "<ul class='group'>"
-		self._modulesNavigation += \
-		  "<li><span class='prefix'>M</span><a href='javascript:documentElement(\"%s\");'>%s</a><li>" \
-		  % (self.id(module), name)
 
 	def list( self, name, something, level=0 ):
 		"""Returns a layer containing the list of fields in this object. This
@@ -393,7 +361,7 @@ class Documenter:
 		# We list the children names, grouped by type
 		has_attributes = False
 		for some_type in KEYS_ORDER:
-			attributes = keys.get(some_type) 
+			attributes = keys.get(some_type)
 			inherited  = keys.get(MOD_INHERITED + some_type)
 			if not attributes and not inherited: continue
 			# We iterate on the groups
@@ -455,7 +423,7 @@ class Documenter:
 		return hasattr(something, "__doc__") and something.__doc__
 
 	def _getDocumentation( self, something ):
-		return getattr(something, "__doc__") 
+		return getattr(something, "__doc__")
 
 	def _getAttribute( self, o, name ):
 		return getattr(o, name)
@@ -544,6 +512,51 @@ class Documenter:
 			TITLE        = title
 		)
 
+	# =========================================================================
+
+	def _formatLiteral( self, value ):
+		return "<code>%s</code>" % (html_escape(repr(something)))
+
+	def _formatModule( self, name, module ):
+		if not self._modulesNavigation:
+			self._modulesNavigation  = "<div class='container'><div class='name'>$TITLE</div>"
+			self._modulesNavigation += "<div class='title'>Modules</div>"
+			self._modulesNavigation += "<ul class='group'>"
+		self._modulesNavigation += \
+		  "<li><span class='prefix'>M</span><a href='javascript:documentElement(\"%s\");'>%s</a><li>" \
+		  % (self.id(module), name)
+
+	def _formatDocumentation( self, docstring ):
+		"""Formats the given docstring"""
+		if self._markup == "texto" and texto and texto.main:
+			# We correct the first line indentation of the text if necessary
+			first_line_indent = texto.core.Parser.getIndentation(docstring[:docstring.find("\n")])
+			text_indent = texto.core.Parser.getIndentation(docstring)
+			docstring = " " * (text_indent - first_line_indent)  + docstring
+			s = StringIO.StringIO(docstring)
+			_, r = texto.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
+			s.close()
+			result += r
+		else:
+			result += "<pre>%s</pre>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
+
+	def _formatObject( self, something ):
+		this_id = "d_" + self.id(something)
+		if self._contents.get(this_id) != None: return self._contents.get(this_id)
+		result = "<div id='%s' class='description'>" % (this_id)
+		result += "<h1>%s</h1>" % (self.describeType(something))
+		result += "<div class='representation'>"
+		result += self.representation(something)
+		result += "</div>"
+		result += "<div class='docstring'>"
+		if description["documentation"]:
+			result += description["documentation"]
+		else:
+			result += "<span class='undocumented'>Undocumented</span>"
+		result += "</div></div>"
+		self._contents[this_id] = result
+		return result
+
 # ------------------------------------------------------------------------------
 #
 # LAMBDA FACTORY DOCUMENTER
@@ -553,7 +566,7 @@ class Documenter:
 class LambdaFactoryDocumenter(Documenter):
 	"""This is the class that is responsible for producing the documentation for
 	the given lambda-factory based objects.
-	
+
 	See <http://www.ivy.fr/lambdafactory> for more details on that."""
 
 	def __init__( self, modules=None, encoding='utf-8' ):
@@ -608,13 +621,13 @@ class LambdaFactoryDocumenter(Documenter):
 			a = arg.getName()
 			if arg.getTypeDescription(): a += ":" + arg.getTypeDescription()
 			# FIXME: Should translate the value back to Sugar
-			if arg.isOptional(): a+="="+str(arg.getDefaultValue()) 
+			if arg.isOptional(): a+="="+str(arg.getDefaultValue())
 			if arg.isRest(): a+="..."
 			if arg.isKeywordsRest(): a+="=..."
 			args.append(a)
 		return "<code>%s (<span class='function-arguments'>%s</span> )</code>" % (name,  ", ".join(args))
 
-	def _isExternalValue( self, value ):
+	def _isExternalValue( self, value, parent=None ):
 		"""Tells if the given value is defined in an external module or not."""
 		return False
 
@@ -720,7 +733,7 @@ def run( args ):
 	target_html = None
 	for arg in args:
 		if arg.endswith(".py"):
-			dir_path = os.path.abspath(os.path.dirname(arg)) 
+			dir_path = os.path.abspath(os.path.dirname(arg))
 			if dir_path not in sys.path: sys.path.append(dir_path)
 			arg = os.path.basename(arg)
 			arg = os.path.splitext(arg)[0]
