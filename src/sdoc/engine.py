@@ -28,8 +28,8 @@ PROCESSORS = pamela.web.getProcessors()
 
 class EmbedBlockParser( texto.blocks.BlockParser ):
 
-	RE_START = re.compile("^\[embed:(\w+)\]$", re.MULTILINE)
-	RE_END   = re.compile("^\[end\]$", re.MULTILINE)
+	RE_START = re.compile("^```(\w+)\s*$", re.MULTILINE)
+	RE_END   = re.compile("^```\s*$", re.MULTILINE)
 
 	WRAPPERS = {
 		"text/plain"       : lambda _:"<pre>{0}</pre>".format(_),
@@ -80,10 +80,44 @@ class Parser( texto.core.Parser ):
 #
 # -----------------------------------------------------------------------------
 
+DOCUMENT_TEMPLATE = """\
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta(charset="utf8") />
+		$(Header)$(=HEADER)
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/reset.css" />
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/base.css" />
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/fonts.css" />
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/forms.css" />
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/texto.css" />
+		<link rel="stylesheet" type="text/css" href="http://ffctn.com/l/css/testing.css" />
+		<script type="text/javascript" src="http://ffctn.com/l/js/extend.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/select.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/html.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/svg.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/texto.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/testing.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/testing.js"></script>
+		<script type="text/javascript" src="http://ffctn.com/l/js/widgets.js"></script>
+	</head>
+	<body class="reset use-base use-texto use-forms"
+		<div class="document"
+		$(Header:title)
+		$(Content)
+		</div>
+	</body>
+</html>
+"""
+
 class Processor( texto.texto2html.Processor ):
 
 	def on_Embed( self, element ):
 		return "EMBED:" + "\n".join(_.data for _ in element.childNodes)  + ":EMBED"
+
+	def on_Document( self, element ):
+		return self.process(element, DOCUMENT_TEMPLATE)
+
 
 # -----------------------------------------------------------------------------
 #
