@@ -1,16 +1,13 @@
 #!/usr/bin/env python
-# Encoding: iso-8859-1
-# vim: tw=80 ts=4 sw=4 noet
+# Encoding: utf8
 # -----------------------------------------------------------------------------
 # Project   : SDoc - Python Documentation introspection
 # -----------------------------------------------------------------------------
-# Author    : Sebastien Pierre                               <sebastien@ivy.fr>
+# Author    : Sebastien Pierre                    <sebastien.pierrei@gmail.com>
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
 # Creation  : 03-Avr-2006
-# Last mod  : 03-Avr-2006
-# History   :
-#             03-Avr-2006 - First implementation
+# Last mod  : 02-Dec-2016
 # -----------------------------------------------------------------------------
 
 import sys ; sys.path.insert(0, "Sources")
@@ -34,17 +31,17 @@ the projet.\
 # ------------------------------------------------------------------------------
 
 setup(
-    name         = "sdoc",
-    version      = main.__version__,
-    author       = "Sebastien Pierre", author_email = "sebastien@ivy.fr",
-    description   = SUMMARY, long_description  = DESCRIPTION,
-    license      = "Revised BSD License",
-    keywords     = "API, documentation, generator, html, javascript",
-    url          = "http://www.github.com/sebastien/sdoc",
-    package_dir  = { "": "src" },
-    packages     = ["sdoc"],
-    package_data = { "sdoc": ["*.tmpl"] },
-    scripts      = ["bin/sdoc"]
+	name         = "sdoc",
+	version      = main.__version__,
+	author       = "Sebastien Pierre", author_email = "sebastien@ivy.fr",
+	description   = SUMMARY, long_description  = DESCRIPTION,
+	license      = "Revised BSD License",
+	keywords     = "API, documentation, generator, html, javascript",
+	url          = "http://www.github.com/sebastien/sdoc",
+	package_dir  = { "": "src" },
+	packages     = ["sdoc"],
+	package_data = { "sdoc": ["*.tmpl"] },
+	scripts      = ["bin/sdoc"]
 )
 
-# EOF
+# EOF - vim: tw=80 ts=4 sw=4 noet
