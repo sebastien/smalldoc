@@ -27,7 +27,8 @@ BUILD_ALL      ?= MANIFEST $(wildcard setup.py)
 
 GIT_RELEASE_PUSH = gh
 
-DIST_ALL        ?= $(SOURCES_PY) $(SOURCES_MD) $(SOURCES_BIN)
+DIST_EXTRA      ?=
+DIST_ALL        ?= $(SOURCES_PY) $(SOURCES_MD) $(SOURCES_BIN) $(DIST_EXTRA)
 
 # === HELPERS =================================================================
 

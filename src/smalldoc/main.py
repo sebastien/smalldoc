@@ -7,8 +7,8 @@
 # Author    : Sebastien Pierre                               <sebastien@ivy.fr>
 # License   : Revised BSD License
 # -----------------------------------------------------------------------------
-# Creation  : 30-Mar-2006
-# Last mod  : 03-Oct-2008
+# Creation  : 2006-04-30
+# Last mod  : 2016-12-02
 # -----------------------------------------------------------------------------
 
 # FIXME: Does not seem to work well with multiple inheritance/interfaces
@@ -46,7 +46,7 @@ try:
 except ImportError:
 	lambdafactory = None
 
-__version__ = "0.5.7"
+__version__ = "0.5.8"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
 listed Python modules.

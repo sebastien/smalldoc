@@ -15,7 +15,7 @@ from distutils.core import setup
 
 SUMMARY     = "SmallTalk-like Python API documenter"
 
-VERSION      = "0.5.7"
+VERSION      = "0.5.8"
 DESCRIPTION = """\
 Smalldoc produces an interactive, JavaScript-based API documentation that resembles
 to the way class navigation is made in SmallTalk. Smalldoc page design is loosely
@@ -40,7 +40,7 @@ setup(
 	url          = "http://www.github.com/sebastien/smalldoc",
 	package_dir  = { "": "src" },
 	packages     = ["smalldoc"],
-	package_data = { "smalldoc": ["*.tmpl"] },
+	package_data = {"smalldoc":["src/smalldoc/smalldoc.tmpl"] },
 	scripts      = ["bin/smalldoc"]
 )
 
