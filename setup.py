@@ -18,12 +18,14 @@ import sdoc.main as main
 from distutils.core import setup
 
 SUMMARY     = "SmallTalk-like Python API documenter"
+
 DESCRIPTION = """\
 SDoc produces an interactive, JavaScript-based API documentation that resembles
 to the way class navigation is made in SmallTalk. SDoc page design is loosely
 inspired from Io language documentation page
 <http://www.iolanguage.com/docs/reference/browser.cgi>, which initially inspired
 the projet.\
+
 """
 # ------------------------------------------------------------------------------
 #
@@ -32,18 +34,17 @@ the projet.\
 # ------------------------------------------------------------------------------
 
 setup(
-    name         = "SDoc",
+    name         = "sdoc",
     version      = main.__version__,
-
     author       = "Sebastien Pierre", author_email = "sebastien@ivy.fr",
     description   = SUMMARY, long_description  = DESCRIPTION,
     license      = "Revised BSD License",
     keywords     = "API, documentation, generator, html, javascript",
-    url          = "http://www.ivy.fr/sdoc",
-    package_dir  = { "": "Sources" },
+    url          = "http://www.github.com/sebastien/sdoc",
+    package_dir  = { "": "src" },
     packages     = ["sdoc"],
     package_data = { "sdoc": ["*.tmpl"] },
-    scripts      = ["Scripts/sdoc"]
+    scripts      = ["bin/sdoc"]
 )
 
 # EOF
