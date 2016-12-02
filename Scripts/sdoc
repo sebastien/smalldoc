@@ -1,4 +1,0 @@
-#!/usr/bin/python
-# Calls the command line interface for Sdoc.
-import sys, sdoc.main
-print sdoc.main.run(sys.argv[1:])

@@ -2,7 +2,7 @@
 # Encoding: iso-8859-1
 # vim: tw=80 ts=4 sw=4 noet
 # -----------------------------------------------------------------------------
-# Project   : SDoc - Python Documentation introspection
+# Project   : Smalldoc - Python Documentation introspection
 # -----------------------------------------------------------------------------
 # Author    : Sebastien Pierre                               <sebastien@ivy.fr>
 # License   : Revised BSD License
@@ -32,26 +32,25 @@
 # TODO: Add Exceptions group
 
 import os, sys, types, string, fnmatch, re
-import sdoc
+import smalldoc
 
-# Kiwi support allows to expand the markup within SDoc
+# Kiwi support allows to expand the markup within Smalldoc
 try:
-	import texto.main
-	import texto.core
-	import StringIO
+	import texto, texto.main, texto.parser
 except ImportError:
 	texto = None
 
-# LambdaFactory allows to generate SDoc documentation from any program model
+# LambdaFactory allows to generate Smalldoc documentation from any program model
 try:
 	import lambdafactory.interfaces
 except ImportError:
 	lambdafactory = None
 
-__version__ = "0.5.6"
+__version__ = "0.5.7"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
-listed Python modules."""
+listed Python modules.
+"""
 
 # ------------------------------------------------------------------------------
 #
@@ -314,7 +313,32 @@ class Documenter:
 		attribute in the object, otherwise returns its type and representation.
 		This returns a div with a title and paragraph.This is a rather long
 		text."""
-		return self._formatObject(something)
+		# FIXME
+		# return self._formatObject(something)
+		this_id = "d_" + self.id(something)
+		if self._contents.get(this_id) != None: return self._contents.get(this_id)
+		result = "<div id='%s' class='description'>" % (this_id)
+		result += "<h1>%s</h1>" % (self.describeType(something))
+		result += "<div class='representation'>"
+		result += self.representation(something)
+		result += "</div>"
+		result += "<div class='docstring'>"
+		if self._hasDocumentation(something):
+			if self._markup == "texto" and texto:
+				# We correct the first line indentation of the text if necessary
+				docstring = self._getDocumentation(something)
+				first_line_indent = texto.parser.Parser.getIndentation(docstring[:docstring.find("\n")])
+				text_indent = texto.parser.Parser.getIndentation(docstring)
+				docstring = " " * (text_indent - first_line_indent)  + docstring
+				r = texto.main.text2htmlbody(docstring.decode("utf8"))
+				result += r
+			else:
+				result += "<div class='raw'>%s</div>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
+		else:
+			result += "<span class='undocumented'>Undocumented</span>"
+		result += "</div></div>"
+		self._contents[this_id] = result
+		return result
 
 	def document( self, name, something, level=0 ):
 		"""Document the given element, which has the given name."""
@@ -495,7 +519,7 @@ class Documenter:
 			return type(value).__name__
 
 	def toHTML( self, title ):
-		template_f = file(os.path.dirname(os.path.abspath(sdoc.__file__)) + "/sdoc.tmpl", "rt")
+		template_f = file(os.path.dirname(os.path.abspath(smalldoc.__file__)) + "/smalldoc.tmpl", "rt")
 		template   = string.Template(template_f.read())
 		template_f.close()
 		# We fill the template
@@ -691,20 +715,20 @@ OPT_BODY       = "Only outputs the HTML document body."""
 OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
 OPT_ENCODING   = "Specifies the encoding of the strings found in the given modules"
 DESCRIPTION    = """\
-SDoc is a Python API documentation generator that produce interactive,
+Smalldoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
 the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 
-See <http://www.ivy.fr/sdoc> for more information."""
+See <http://www.ivy.fr/smalldoc> for more information."""
 USAGE          = "%prog [options] module.py module.name ... [output file]"
 
 def run( args ):
-	"""Runs SDoc as a command line tool"""
+	"""Runs Smalldoc as a command line tool"""
 	if type(args) not in (type([]), type(())): args = [args]
 	from optparse import OptionParser
 	# We create the parse and register the options
-	oparser = OptionParser(prog="sdoc", description=DESCRIPTION,
-	usage=USAGE, version="SDoc " + __version__)
+	oparser = OptionParser(prog="smalldoc", description=DESCRIPTION,
+	usage=USAGE, version="Smalldoc " + __version__)
 	oparser.add_option("-p", "--path", action="append", dest="pythonpath",
 		help=OPT_PYTHONPATH)
 	oparser.add_option("-a", "--accepts", action="append", dest="accepts",
@@ -712,7 +736,7 @@ def run( args ):
 	oparser.add_option("-c", "--compact", action="store_true", dest="compact",
 		help=OPT_COMPACT)
 	oparser.add_option("-m", "--markup", action="store", dest="markup",
-		help=OPT_MARKUP)
+		help=OPT_MARKUP, default="rst")
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
 		help=OPT_BODY)
 	oparser.add_option("-t", "--title", dest="title",
@@ -744,7 +768,7 @@ def run( args ):
 			documenter.documentModule(arg)
 	# We eventually return the HTML file
 	if args:
-		title = options.title or "Python API documentation (SDoc)"
+		title = options.title or "Python API documentation (Smalldoc)"
 		html = documenter.toHTML(title=title)
 		if options.compact: html = compact_html(html)
 	else:
