@@ -32,7 +32,7 @@
 # TODO: Add Exceptions group
 
 import os, sys, types, string, fnmatch, re
-import sdoc
+import smalldoc
 
 # Kiwi support allows to expand the markup within SDoc
 try:
@@ -524,7 +524,7 @@ class Documenter:
 			return type(value).__name__
 
 	def toHTML( self, title ):
-		template_f = file(os.path.dirname(os.path.abspath(sdoc.__file__)) + "/sdoc.tmpl", "rt")
+		template_f = file(os.path.dirname(os.path.abspath(smalldoc.__file__)) + "/smalldoc.tmpl", "rt")
 		template   = string.Template(template_f.read())
 		template_f.close()
 		# We fill the template
@@ -679,7 +679,7 @@ SDoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
 the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 
-See <http://www.ivy.fr/sdoc> for more information."""
+See <http://www.ivy.fr/smalldoc> for more information."""
 USAGE          = "%prog [options] module.py module.name ... [output file]"
 
 def run( args ):
@@ -687,7 +687,7 @@ def run( args ):
 	if type(args) not in (type([]), type(())): args = [args]
 	from optparse import OptionParser
 	# We create the parse and register the options
-	oparser = OptionParser(prog="sdoc", description=DESCRIPTION,
+	oparser = OptionParser(prog="smalldoc", description=DESCRIPTION,
 	usage=USAGE, version="SDoc " + __version__)
 	oparser.add_option("-p", "--path", action="append", dest="pythonpath",
 		help=OPT_PYTHONPATH)

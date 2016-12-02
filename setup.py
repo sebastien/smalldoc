@@ -11,7 +11,7 @@
 # -----------------------------------------------------------------------------
 
 import sys ; sys.path.insert(0, "Sources")
-import sdoc.main as main
+import smalldoc.main as main
 from distutils.core import setup
 
 SUMMARY     = "SmallTalk-like Python API documenter"
@@ -31,17 +31,17 @@ the projet.\
 # ------------------------------------------------------------------------------
 
 setup(
-	name         = "sdoc",
+	name         = "smalldoc",
 	version      = main.__version__,
 	author       = "Sebastien Pierre", author_email = "sebastien@ivy.fr",
 	description   = SUMMARY, long_description  = DESCRIPTION,
 	license      = "Revised BSD License",
 	keywords     = "API, documentation, generator, html, javascript",
-	url          = "http://www.github.com/sebastien/sdoc",
+	url          = "http://www.github.com/sebastien/smalldoc",
 	package_dir  = { "": "src" },
-	packages     = ["sdoc"],
-	package_data = { "sdoc": ["*.tmpl"] },
-	scripts      = ["bin/sdoc"]
+	packages     = ["smalldoc"],
+	package_data = { "smalldoc": ["*.tmpl"] },
+	scripts      = ["bin/smalldoc"]
 )
 
 # EOF - vim: tw=80 ts=4 sw=4 noet
