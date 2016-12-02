@@ -36,9 +36,7 @@ import sdoc
 
 # Kiwi support allows to expand the markup within SDoc
 try:
-	import texto.main 
-	import texto.core
-	import StringIO
+	import texto, texto.main, texto.parser
 except ImportError:
 	texto = None
 
@@ -51,7 +49,8 @@ except ImportError:
 __version__ = "0.5.6"
 __doc__ = """\
 SDOc is a tool to generate a one-page interactive API documentation for the
-listed Python modules."""
+listed Python modules.
+"""
 
 # ------------------------------------------------------------------------------
 #
@@ -223,7 +222,7 @@ class Documenter:
 	def _keysByTypeHelper( self, keysbytype, value ):
 		"""This function may be called to enrich the keysByType result with
 		additional keys and values.
-		
+
 		This hook was added specifically for Python dir() method not listing the
 		`__bases__` attribute of class objects, which is necessary."""
 		# If the something is a class, we add class-specific attributes which
@@ -324,18 +323,16 @@ class Documenter:
 		result += "</div>"
 		result += "<div class='docstring'>"
 		if self._hasDocumentation(something):
-			if self._markup == "texto" and texto and texto.main:
+			if self._markup == "texto" and texto:
 				# We correct the first line indentation of the text if necessary
 				docstring = self._getDocumentation(something)
-				first_line_indent = texto.core.Parser.getIndentation(docstring[:docstring.find("\n")])
-				text_indent = texto.core.Parser.getIndentation(docstring)
+				first_line_indent = texto.parser.Parser.getIndentation(docstring[:docstring.find("\n")])
+				text_indent = texto.parser.Parser.getIndentation(docstring)
 				docstring = " " * (text_indent - first_line_indent)  + docstring
-				s = StringIO.StringIO(docstring)
-				_, r = texto.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
-				s.close()
+				r = texto.main.text2htmlbody(docstring.decode("utf8"))
 				result += r
 			else:
-				result += "<pre>%s</pre>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
+				result += "<div class='raw'>%s</div>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
 		else:
 			result += "<span class='undocumented'>Undocumented</span>"
 		result += "</div></div>"
@@ -393,7 +390,7 @@ class Documenter:
 		# We list the children names, grouped by type
 		has_attributes = False
 		for some_type in KEYS_ORDER:
-			attributes = keys.get(some_type) 
+			attributes = keys.get(some_type)
 			inherited  = keys.get(MOD_INHERITED + some_type)
 			if not attributes and not inherited: continue
 			# We iterate on the groups
@@ -455,7 +452,7 @@ class Documenter:
 		return hasattr(something, "__doc__") and something.__doc__
 
 	def _getDocumentation( self, something ):
-		return getattr(something, "__doc__") 
+		return getattr(something, "__doc__")
 
 	def _getAttribute( self, o, name ):
 		return getattr(o, name)
@@ -553,7 +550,7 @@ class Documenter:
 class LambdaFactoryDocumenter(Documenter):
 	"""This is the class that is responsible for producing the documentation for
 	the given lambda-factory based objects.
-	
+
 	See <http://www.ivy.fr/lambdafactory> for more details on that."""
 
 	def __init__( self, modules=None, encoding='utf-8' ):
@@ -608,7 +605,7 @@ class LambdaFactoryDocumenter(Documenter):
 			a = arg.getName()
 			if arg.getTypeDescription(): a += ":" + arg.getTypeDescription()
 			# FIXME: Should translate the value back to Sugar
-			if arg.isOptional(): a+="="+str(arg.getDefaultValue()) 
+			if arg.isOptional(): a+="="+str(arg.getDefaultValue())
 			if arg.isRest(): a+="..."
 			if arg.isKeywordsRest(): a+="=..."
 			args.append(a)
@@ -699,7 +696,7 @@ def run( args ):
 	oparser.add_option("-c", "--compact", action="store_true", dest="compact",
 		help=OPT_COMPACT)
 	oparser.add_option("-m", "--markup", action="store", dest="markup",
-		help=OPT_MARKUP)
+		help=OPT_MARKUP, default="rst")
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
 		help=OPT_BODY)
 	oparser.add_option("-t", "--title", dest="title",
@@ -720,7 +717,7 @@ def run( args ):
 	target_html = None
 	for arg in args:
 		if arg.endswith(".py"):
-			dir_path = os.path.abspath(os.path.dirname(arg)) 
+			dir_path = os.path.abspath(os.path.dirname(arg))
 			if dir_path not in sys.path: sys.path.append(dir_path)
 			arg = os.path.basename(arg)
 			arg = os.path.splitext(arg)[0]
