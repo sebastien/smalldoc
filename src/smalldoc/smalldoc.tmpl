@@ -80,6 +80,7 @@ code, pre {
 	border-right: 1px solid #f0f0f0;
 	overflow: auto;
 	display: flex;
+	flex-grow: 0;
 }
 
 #modules ul {
@@ -218,16 +219,13 @@ code, pre {
 
 #smalldoc .root, #smalldoc .container {
 	color: #404040;
-}
-
-#smalldoc .container {
 	box-sizing: border-box;
 	flex-grow: 1;
 }
 
 #api .container {
 	border-left: 1px solid #f0f0f0;
-	flex-grow: 2;
+	flex-grow: 1;
 	padding-left:  10pt;
 }
 
