@@ -31,7 +31,7 @@
 # TOOD: Add 'important' tags for classes that have many methods
 # TODO: Add Exceptions group
 
-import os, sys, types, string, fnmatch, re
+import os, sys, types, string, fnmatch, re, pprint
 import smalldoc
 
 # Kiwi support allows to expand the markup within Smalldoc
@@ -306,9 +306,9 @@ class Documenter:
 		if type(something) in (tuple, list, dict, unicode, str):
 			return self._formatLiteral(something)
 		else:
-			return ""
+			return self._formatLiteral(something)
 
-	def describe( self, something ):
+	def describe( self, something, name ):
 		"""Gets a description for the given object. This looks for a __doc__
 		attribute in the object, otherwise returns its type and representation.
 		This returns a div with a title and paragraph.This is a rather long
@@ -318,7 +318,7 @@ class Documenter:
 		this_id = "d_" + self.id(something)
 		if self._contents.get(this_id) != None: return self._contents.get(this_id)
 		result = "<div id='%s' class='description'>" % (this_id)
-		result += "<h1>%s</h1>" % (self.describeType(something))
+		result += "<h1>%s</h1>" % (self.describeType(something, name))
 		result += "<div class='representation'>"
 		result += self.representation(something)
 		result += "</div>"
@@ -348,7 +348,7 @@ class Documenter:
 		result = ""
 		if level == 0 or self.recurses(something):
 			result += self.list(name, something, level)
-		self._descriptions.append(self.describe(something))
+		self._descriptions.append(self.describe(something, name))
 		self._path.pop()
 		self._visited[this_id] = True
 		return result
@@ -367,7 +367,7 @@ class Documenter:
 		assert module
 		self._currentModule = module
 		self._modules.append(module)
-		_formatModule (name, module)
+		self._formatModule (name, module)
 		self.document(name, module, 0)
 
 	def list( self, name, something, level=0 ):
@@ -406,7 +406,7 @@ class Documenter:
 						group_printed = True
 					child_id = self.id(child)
 					try:
-						is_documented = self._getDocumentation(child) and "documented" or "undocumented"
+						is_documented = self._getDocumentation(child)
 					except:
 						is_documented = False
 					link = "href='javascript:documentElement(\"%s\",\"%s\");'" % (this_id, child_id)
@@ -501,10 +501,10 @@ class Documenter:
 		elif repr(a_value).startswith("<class '"): return KEY_CLASS
 		else: return KEY_VALUE
 
-	def describeType( self, value ):
+	def describeType( self, value, slotName ):
 		"""Gives a detailed, human-readable string describing the given type."""
 		a_type = self.typeToName(value)
-		name = lambda o:"<span class='name'>%s</span>" % (o.__name__)
+		name = lambda o,c="",suffix="":"<span class='name%s'>%s%s</span>" % (" " + c if c else "", o if isinstance(o, str) else o.__name__,suffix)
 		if a_type == KEY_MODULE:
 			return "Module " + name(value)
 		if a_type == KEY_CLASS:
@@ -512,16 +512,15 @@ class Documenter:
 		if a_type == KEY_FUNCTION:
 			return "Function " + name(value)
 		if a_type == KEY_METHOD:
-			return "Method " + name(value)
+			return "Method " + name(value.im_class, "parent", suffix=".") + name(value)
 		if a_type == KEY_PARENT:
 			return "Parent " + name(value)
 		else:
-			return type(value).__name__
+			return type(value).__name__ + " " + name(slotName)
 
 	def toHTML( self, title ):
-		template_f = file(os.path.dirname(os.path.abspath(smalldoc.__file__)) + "/smalldoc.tmpl", "rt")
-		template   = string.Template(template_f.read())
-		template_f.close()
+		with  open(os.path.dirname(os.path.abspath(smalldoc.__file__)) + "/smalldoc.tmpl", "rt") as template_f:
+			template   = string.Template(template_f.read())
 		# We fill the template
 		if not self._modules: return ""
 		if self._modulesNavigation:
@@ -530,7 +529,7 @@ class Documenter:
 			modules_nav = ""
 		return template.substitute(
 			MAIN         = self.id(self._modules[0]),
-			MODULES      = modules_nav,
+			MODULES      = string.Template(modules_nav).substitute(TITLE=title),
 			CONTENT      = "".join(self._contents.values()),
 			DESCRIPTIONS = "".join(self._descriptions),
 			TITLE        = title
@@ -539,7 +538,7 @@ class Documenter:
 	# =========================================================================
 
 	def _formatLiteral( self, value ):
-		return "<code>%s</code>" % (html_escape(repr(something)))
+		return "<code>%s</code>" % (html_escape(pprint.pformat(value)))
 
 	def _formatModule( self, name, module ):
 		if not self._modulesNavigation:
@@ -557,12 +556,10 @@ class Documenter:
 			first_line_indent = texto.core.Parser.getIndentation(docstring[:docstring.find("\n")])
 			text_indent = texto.core.Parser.getIndentation(docstring)
 			docstring = " " * (text_indent - first_line_indent)  + docstring
-			s = StringIO.StringIO(docstring)
-			_, r = texto.main.run("-m --input-encoding=%s --body-only --" % (self._encoding), s, noOutput=True)
-			s.close()
+			r = texto.main.text2htmlbody(docstring.decode("utf8"))
 			result += r
 		else:
-			result += "<pre>%s</pre>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
+			result += "<div class='raw'>%s</div>".replace("\n", "<br />") % (html_escape(self._getDocumentation(something)))
 
 	def _formatObject( self, something ):
 		this_id = "d_" + self.id(something)
@@ -591,7 +588,7 @@ class LambdaFactoryDocumenter(Documenter):
 	"""This is the class that is responsible for producing the documentation for
 	the given lambda-factory based objects.
 
-	See <http://www.ivy.fr/lambdafactory> for more details on that."""
+	See <http://www.github.com/sebastien/lambdafactory> for more details on that."""
 
 	def __init__( self, modules=None, encoding='utf-8' ):
 		Documenter.__init__(self, modules, encoding)
@@ -719,7 +716,7 @@ Smalldoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
 the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 
-See <http://www.ivy.fr/smalldoc> for more information."""
+See <http://www.github.com/sebastien/smalldoc> for more information."""
 USAGE          = "%prog [options] module.py module.name ... [output file]"
 
 def run( args ):
@@ -745,8 +742,9 @@ def run( args ):
 		help=OPT_ENCODING)
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
-	documenter   = Documenter(options.accepts, encoding=options.encoding)
+	documenter = Documenter(options.accepts, encoding=options.encoding)
 	documenter._markup = options.markup
+	lf_documenter = None
 	# We modify the sys.path
 	if options.pythonpath:
 		options.pythonpath.reverse()
@@ -762,6 +760,15 @@ def run( args ):
 			arg = os.path.basename(arg)
 			arg = os.path.splitext(arg)[0]
 			documenter.documentModule(arg)
+		elif arg.endswith(".sjs"):
+			dir_path = os.path.abspath(os.path.dirname(arg))
+			if dir_path not in sys.path: sys.path.append(dir_path)
+			arg = os.path.basename(arg)
+			arg = os.path.splitext(arg)[0]
+			documenter = LambdaFactoryDocumenter() if not isinstance(documenter, LambdaFactoryDocumenter) else documenter
+			import sugar.main
+			program    = sugar.main.parseFile(arg)
+			#documenter.documentModule(arg)
 		elif arg.lower().endswith(".html"):
 			target_html = arg
 		else:
