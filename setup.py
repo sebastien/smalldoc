@@ -15,7 +15,7 @@ from distutils.core import setup
 
 SUMMARY     = "SmallTalk-like Python API documenter"
 
-VERSION      = "0.5.8"
+VERSION      = "0.5.9 USAGE, version"
 DESCRIPTION = """\
 Smalldoc produces an interactive, JavaScript-based API documentation that resembles
 to the way class navigation is made in SmallTalk. Smalldoc page design is loosely
