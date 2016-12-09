@@ -681,7 +681,7 @@ class LambdaFactoryDocumenter(Documenter):
 		elif isinstance(a_value, lif.IAttribute): return KEY_ATTRIBUTE
 		else: return KEY_VALUE
 
-	def describeType( self, value ):
+	def describeType( self, value, slotName=None ):
 		"""Gives a detailed, human-readable string describing the given type."""
 		a_type = self.typeToName(value)
 		name = lambda o:"<span class='name'>%s</span>" % (o)
@@ -753,7 +753,8 @@ def run( args ):
 			log("Adding path '%s'..." % (arg))
 			sys.path.insert(0, arg)
 	# And now document the module
-	target_html = None
+	target_html   = None
+	sugar_modules = []
 	for arg in args:
 		if arg.endswith(".py"):
 			dir_path = os.path.abspath(os.path.dirname(arg))
@@ -762,18 +763,18 @@ def run( args ):
 			arg = os.path.splitext(arg)[0]
 			documenter.documentModule(arg)
 		elif arg.endswith(".sjs"):
-			dir_path = os.path.abspath(os.path.dirname(arg))
-			if dir_path not in sys.path: sys.path.append(dir_path)
-			arg = os.path.basename(arg)
-			arg = os.path.splitext(arg)[0]
-			documenter = LambdaFactoryDocumenter() if not isinstance(documenter, LambdaFactoryDocumenter) else documenter
-			import sugar.main
-			program    = sugar.main.parseFile(arg)
-			#documenter.documentModule(arg)
+			sugar_modules.append(arg)
 		elif arg.lower().endswith(".html"):
 			target_html = arg
 		else:
 			documenter.documentModule(arg)
+	if sugar_modules:
+		documenter = LambdaFactoryDocumenter() if not isinstance(documenter, LambdaFactoryDocumenter) else documenter
+		import sugar.main
+		program    = sugar.main.run(["-clnone", "-Llib/sjs"] + sugar_modules)
+		for module in program.getModules():
+			if module.isImported(): continue
+			documenter.documentModule(module)
 	# We eventually return the HTML file
 	if args:
 		title = options.title or "Python API documentation (Smalldoc)"
