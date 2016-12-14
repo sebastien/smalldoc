@@ -6,7 +6,7 @@
 # License           : BSD License
 # -----------------------------------------------------------------------------
 # Creation date     : 2016-12-09
-# Last modification : 2016-12-09
+# Last modification : 2016-12-14
 # -----------------------------------------------------------------------------
 
 import xml
@@ -15,12 +15,18 @@ KEY_MODULE          = "module"
 KEY_CLASS           = "class"
 KEY_FUNCTION        = "function"
 KEY_METHOD          = "method"
-KEY_CONSTRUCTOR     = "constructor"
+KEY_CONSTRUCTOR     = "class constructor"
 KEY_CLASS_METHOD    = "class method"
 KEY_CLASS_ATTRIBUTE = "class attribute"
 KEY_ATTRIBUTE       = "attribute"
 KEY_VALUE           = "value"
 KEY_PARENT          = "parent"
+KEY_STRING          = "string"
+KEY_NUMBER          = "number"
+KEY_MAP             = "map"
+KEY_LIST            = "list"
+KEY_VALUE           = "value"
+KEY_REFERENCE       = "reference"
 
 MOD_INHERITED       = "inherited"
 
@@ -76,11 +82,21 @@ COMPACT_NAMES = {
 # -----------------------------------------------------------------------------
 
 class Element(object):
+	"""Smalldoc's *element* represents a generic/versatile class to represent
+	program element. There should be no need to subclass the element, as it
+	is meant to encapsulate the important information that is required
+	to display an element of a program.
 
-	def __init__( self, id=None, name=None, type=None, parent=None, documentation=None, source=None, range=None ):
+	Its properties and API were carefully selected in order to avoid having
+	to create one subclass per type, and make sure the data could be
+	serialized to a consistent JSON format that can be easily processed
+	using JavaScript."""
+
+	def __init__( self, id=None, name=None, type=None, parent=None, tags=None, documentation=None, source=None, range=None ):
 		self.id            = id
 		self.name          = name
 		self.type          = type
+		self.tags          = tags
 		self.parent        = parent
 		self.documentation = documentation
 		self.source        = source
@@ -112,6 +128,7 @@ class Element(object):
 			id            = self.id,
 			name          = self.name,
 			type          = self.type,
+			tags          = self.tags,
 			parent        = self.parent.id if self.parent else None,
 			documentation = self.documentation,
 			source        = self.source,
@@ -127,12 +144,6 @@ class Element(object):
 			) for _ in self.relations or ()]
 		).items() if v)
 
-	def toXML( self ):
-		node = document.createElement("element")
-		node.setAttribute("id",   self.id)
-		node.setAttribute("name", self.nam)
-		if self.type: node.setAttribute("type", self.type)
-
 # -----------------------------------------------------------------------------
 #
 # DOCUMENTER
@@ -140,6 +151,8 @@ class Element(object):
 # -----------------------------------------------------------------------------
 
 class Documenter(object):
+	"""A factory-like abstraction to create elements. Documenters are
+	wrapped by drivers, which create elements based on a given input."""
 
 	def __init__( self ):
 		self.elements = []
