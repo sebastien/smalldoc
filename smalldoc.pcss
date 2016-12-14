@@ -1,0 +1,185 @@
+html, body:
+	background : #fcfcf6
+	color: #000000
+	font: 8pt "Fira Sans", "Lucida Grande", "Lucida", Helvetica, sans-serif
+	line-height: 14pt
+	padding: 0
+	margin: 0
+
+a, a:active, a:link, a:visited, a:hover:
+	color: #404040
+	text-decoration: none
+	outline: 0px solid transparent
+	transition-property: color,background-color
+	transition-duration: 0.15s
+
+a:active, a:focus:
+	background-color: #eae08c
+	color: white
+	border: 0
+	padding: 2px
+
+a:hover:
+	color: #8fb216
+
+code:
+	color: #8fb216
+
+code, pre:
+	font-family: "Fira Mono", monospace
+
+#descriptions:
+	padding: 0
+	margin: 0
+	flex-grow: 3
+
+.about:
+	position: fixed
+	bottom: 5pt
+	right: 10pt
+	opacity: 0.5
+	text-align: right
+
+#options:
+	display: none
+	text-align: right
+
+#options label:
+	font-weight: bold
+	padding-left: 10px
+
+#containers
+	width: 150px
+	padding:0
+	padding-left: 5pt
+	padding-right: 10pt
+	background: white
+	border-right: 1px solid #f0f0f0
+	overflow: auto
+	display: flex
+	flex-grow: 0
+
+#modules ul:
+	margin: 0
+	padding: 0
+
+#modules ul li:
+	list-style-type: none
+	padding: 0
+
+#hidden:
+	padding: 0
+	margin: 0
+	display: none
+
+#containers
+	width: 400px
+
+#smalldoc:
+	display: flex
+	align-items: stretch
+	width: 100%
+	height: 100vh
+
+#smalldoc .description:
+	display: none
+	padding: 10pt
+
+#smalldoc .representation:
+	margin-top: 1.25em
+	margin-bottom: 0em
+	padding: 20pt
+	margin-left: -10pt
+	margin-right: -10pt
+	background: #FBF8E1
+	font-size: 120%
+	line-height: 1.25em
+
+#smalldoc .title:
+	padding-top: 10pt
+	margin-bottom: 5pt
+	font-weight: bold
+	border-bottom: 1px solid #f0f0f0
+	color: #505050
+
+#smalldoc .prefix:
+	color: #D0C0C0
+	font-style: italic
+	padding-right: 5px
+
+
+#smalldoc .noattributes 
+	color: #D0C0C0
+	font-style: italic
+
+#smalldoc .name, #smalldoc .name a:
+	color: #cdb425
+
+#smalldoc .name.parent, #smalldoc .name.parent a:
+	font-weight: normal
+
+#smalldoc .term:
+	font-weight:bold
+	color: #cdb425
+	background: #F9FFDE
+	padding-left: 2px
+	padding-right: 2px
+
+#smalldoc .name:
+	font-weight: bold
+	margin-top: 1em
+
+#smalldoc .special:
+	font-weight: bold
+
+#smalldoc .special.__bases__ :
+	font-weight: normal
+	color: #cdb425
+
+#smalldoc .undocumented, #smalldoc .undocumented a:
+	color: #b0c0c0
+	font-style: italic
+
+#smalldoc .docstring :
+	font-size: 13px
+	line-height: 1.5em
+	border-top: 1px solid #f0f0f0
+	border-bottom: 1px solid #f0f0f0
+	background: white
+	margin-left: -10pt
+	margin-right: -10pt
+	padding: 20pt
+	color: #808080
+
+
+#smalldoc .docstring p:
+	max-width: 45em
+
+#smalldoc .docstring ul:
+	margin-left: 0em
+	padding-left: 10pt
+	list-style-type: circle
+
+#smalldoc .docstring li:
+	padding-left: 5pt
+
+#smalldoc table caption:
+	font: 8pt/14pt "Lucida Grande", "Lucida", Helvetica, sans-serif
+	font-weight: bold
+
+
+#smalldoc table tr td:
+	font: 8pt/14pt "Lucida Grande", "Lucida", Helvetica, sans-serif
+	color: #808080
+
+
+#smalldoc .root, #smalldoc .container:
+	color: #404040
+	box-sizing: border-box
+	flex-grow: 1
+
+#containers .container:
+	border-left: 1px solid #f0f0f0
+	flex-grow: 1
+	padding-left:  10pt
+
