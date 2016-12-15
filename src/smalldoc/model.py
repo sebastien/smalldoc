@@ -33,6 +33,7 @@ MOD_INHERITED       = "inherited"
 REL_SLOT            = "slot"
 REL_EXTENDS         = "extends"
 REL_ARGUMENTS       = "arguments"
+REL_DEFINED         = "defined"
 
 KEYS_ORDER = (
 	KEY_PARENT,
@@ -112,6 +113,7 @@ class Element(object):
 
 	def setSlot( self, name, value ):
 		self.children.append((name, value))
+		value.addRelation(REL_DEFINED, self)
 		return self
 
 	def addChild( self, name, element ):

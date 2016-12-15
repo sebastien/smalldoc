@@ -26,6 +26,23 @@
 
 @function setup data
 	DATA = data
+	# Ensures the basic structure
+	let ensure = {id,parent,callback|
+		var node = document getElementById (id)
+		if not node
+			node = html div {id:id}
+			if callback
+				callback (node)
+			end
+			parent appendChild (node)
+		end
+		node
+	}
+	let n = ensure ("smalldoc", document body)
+	ensure ("containers",  n)
+	ensure ("description", n)
+	ensure ("hidden",      n)
+	ensure ("about",       n, {_ innerHTML = "<a href='https://github.com/sebastien/smalldoc'>smalldoc</a>"})
 	render (data)
 	window addEventListener ("hashchange", onHashChange)
 	onHashChange ()
@@ -88,9 +105,14 @@
 		r innerHTML = element representation
 		node appendChild (r)
 	end
+	# Documentation
 	let d = html div ({_:"documentation"})
 	d innerHTML = element documentation or "<div class='undocumented'>Undocumented</div>"
 	node appendChild (d)
+	# Relations
+	let n = renderRelations (element)
+	console log (n)
+	node appendChild (n)
 @end
 
 @function renderContainer data, name
@@ -128,6 +150,47 @@
 	)
 @end
 
+@function renderRelations element
+	let keys = []
+	let d    = (element relations or []) reduce ({r,e|
+		let k = e[0]
+		if keys indexOf (k) == -1 -> keys push (k)
+		console log ("R", e, ":", r)
+		r[k] ?= []
+		r[k] push (e)
+		r
+	}, {})
+	return html div (
+		{_:"relations"}
+		keys sort () map {
+			html div (
+				{_:"relation",data-type:_}
+				html h2 (_)
+				html ul (
+					d[_] map {
+						html li (renderRelation(_))
+					}
+				)
+			)
+		}
+	)
+@end
+
+@function renderRelation r
+	let name = r[0]
+	if name == "defined"
+		let s = STATE symbols [r[1]]
+		return html span (
+			{_:"defined"}
+			html span (
+				{_:"name", data-type:_getGroup(s)}
+				html a ({href:"#" + r[1]}, r[1])
+			)
+		)
+	else
+		return None
+	end
+@end
 # -----------------------------------------------------------------------------
 #
 # HELPERS

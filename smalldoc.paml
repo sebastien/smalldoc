@@ -4,18 +4,9 @@
 		<meta(charset="utf8")
 		<link(href="https://fonts.googleapis.com/css?family=Fira+Mono|Fira+Sans",rel="stylesheet")
 		<link(href=smalldoc.pcss,rel=stylesheet)
-		<script(src=select-0.7.11.js)
 		<script(src=html-5.0.9.js)
 	<body
-		<div#smalldoc
-			<div#containers
-			<div#description
-				<div.name
-				<div.representation
-				<div.documentation
-				<div.code
-			<div#hidden
-				<div#container-0.container
-				<div#container-1.container
+		<div#smalldoc(data-url="data.json")
 		<script(src=smalldoc.sjs)
+
 # EOF
