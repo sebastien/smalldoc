@@ -16,9 +16,10 @@ except ImportError as e:
 
 class Driver(object):
 
-	def __init__( self, documenter ):
+	def __init__( self, documenter, path=() ):
 		self.documenter = documenter
 		self.scopes     = []
+		self.path       = path
 
 	def render( self, text, markup ):
 		if markup == "texto":

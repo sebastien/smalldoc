@@ -158,12 +158,6 @@ def snip_html( html ):
 	content      = html.split("<!-- hidden-snip -->")[1]
 	return css_main, css_classes, javascript, modules, descriptions, content
 
-def log(*args):
-	sys.stderr.write("%s\n" % (" ".join(map(str, args))))
-
-def err(*args):
-	sys.stderr.write("ERROR: %s\n" % (" ".join(map(str, args))))
-
 # ------------------------------------------------------------------------------
 #
 # DOCUMENTER
@@ -173,7 +167,7 @@ def err(*args):
 IDS    = {}
 RETAIN = []
 
-class Documenter:
+class PyDocumenter:
 	"""This is the class that is responsible for producing the documentation for
 	the given objects. It can be later interrogated to create the HTML file that
 	will be the documentation."""
@@ -363,7 +357,7 @@ class Documenter:
 		# FIXME: Abstract this (like _resolveModule)
 		try:
 			exec "import %s as module" % (name)
-			log("Documenting '%s'" % (name))
+			logging.info("Documenting '%s'" % (name))
 		except Exception, e:
 			self._error("Cannot import module '%s'\n%s" % (name,e))
 			return
@@ -723,7 +717,7 @@ def run( args, stdout=sys.stdout ):
 	# We create the parse and register the options
 	oparser = OptionParser(prog="smalldoc", description=DESCRIPTION,
 	usage=USAGE, version="Smalldoc " + __version__)
-	oparser.add_option("-o", "--output", action="append", dest="output",
+	oparser.add_option("-o", "--output", action="append", dest="output", default=[],
 		help="Outputs the documentation to the given file (format will be detected based on extension)")
 	oparser.add_option("-p", "--path", action="append", dest="path",
 		help="Extends the PYTHONPATH with the given path")
@@ -742,15 +736,14 @@ def run( args, stdout=sys.stdout ):
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
 	# We modify the sys.path
-	if options.pythonpath:
-		options.pythonpath.reverse()
-		for arg in options.pythonpath:
-			log("Adding path '%s'..." % (arg))
+	if options.path:
+		options.path.reverse()
+		for arg in options.path:
 			sys.path.insert(0, arg)
 	documenter = Documenter()
 	drivers = {
 		"py" : None,
-		"sg" : SugarDriver(documenter)
+		"sg" : SugarDriver(documenter, options.path)
 	}
 	# And now document the module
 	for arg in args:
@@ -762,16 +755,17 @@ def run( args, stdout=sys.stdout ):
 			arg = os.path.splitext(arg)[0]
 			drivers["py"].parseModule(arg)
 		elif ext in (".spy", ".sjs", ".sg"):
-			drivers["sg"].parse
+			drivers["sg"].parsePath(arg)
 		elif ext in (".html", ".json", ".js"):
-			options.outputs.append(arg)
+			options.output.append(arg)
 		else:
 			drivers["py"].parseModule(arg)
 	if args:
 		title = options.title or "API"
-		for o in options.output:
+		for o in options.output or ("-"):
 			_, ext = os.path.splitext(o)
-			f = ext[1:] if ext in (".html", ".json", ".js") else options.format
+			#f = ext[1:] if ext in (".html", ".json", ".js") else options.format
+			f = "html"
 			if o == "-":
 				o = stdout
 				documenter.write(o, f)
@@ -779,9 +773,8 @@ def run( args, stdout=sys.stdout ):
 				with open(o, "w") as s:
 					documenter.write(s, f)
 	else:
-		html = ""
 		oparser.print_help()
-	return html
+	return documenter
 
 if __name__ == "__main__":
 	run(sys.argv[1:])

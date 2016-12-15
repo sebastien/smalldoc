@@ -15,7 +15,7 @@
 	var html = exports; var __module__ = html;
 // END:UMD_MODULE_PREAMBLE
 
-__module__ == typeof(html) === undefined ? {} : html;
+__module__ = typeof(html) === undefined ? {} : html;
 __module__.NAMESPACE=__module__.namespace=null;
 __module__.NAMESPACES=__module__.namespaces={"svg": "http://www.w3.org/2000/svg", "html": "http://www.w3.org/1999/xhtml", "xlink": "http://www.w3.org/1999/xlink"};
 __module__._=function(name, args){

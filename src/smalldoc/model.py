@@ -6,10 +6,10 @@
 # License           : BSD License
 # -----------------------------------------------------------------------------
 # Creation date     : 2016-12-09
-# Last modification : 2016-12-14
+# Last modification : 2016-12-15
 # -----------------------------------------------------------------------------
 
-import xml
+import os, json
 
 KEY_MODULE          = "module"
 KEY_CLASS           = "class"
@@ -30,9 +30,9 @@ KEY_REFERENCE       = "reference"
 
 MOD_INHERITED       = "inherited"
 
-REL_SLOT            = "slot"
 REL_EXTENDS         = "extends"
 REL_ARGUMENTS       = "arguments"
+REL_SLOT            = "defines"
 REL_DEFINED         = "defined"
 
 KEYS_ORDER = (
@@ -114,6 +114,7 @@ class Element(object):
 	def setSlot( self, name, value ):
 		self.children.append((name, value))
 		value.addRelation(REL_DEFINED, self)
+		value.addRelation(REL_SLOT, name, value)
 		return self
 
 	def addChild( self, name, element ):
@@ -177,8 +178,26 @@ class Documenter(object):
 		return {"children":[[_.name or _.id, _.toJSON()] for _ in self.elements]}
 
 	def write( self, stream, format ):
+		templates = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
 		if format == "json":
 			json.dump(self.toJSON(), stream)
 		elif format == "html":
+			with open(os.path.join(templates, "html-5.0.9.js")) as f: jsh  = f.read()
+			with open(os.path.join(templates, "smalldoc.js"))   as f: jss  = f.read()
+			with open(os.path.join(templates, "smalldoc.css"))  as f: css  = f.read()
+			with open(os.path.join(templates, "smalldoc.html")) as f: html = f.read()
+			data = json.dumps(self.toJSON())
+			html = html.replace('<link href="smalldoc.css" rel="stylesheet" />', "<style>" + css + "</style>")
+			html = html.replace(' src="html-5.0.9.js">', ">" + jsh)
+			html = html.replace(' src="smalldoc.js">',   ">" + jss + ";smalldoc.setup(" + data + ");")
+			html = html.replace('data-url="data.json"', "")
+			stream.write(html)
+		elif format == "js":
+			js  = ""
+			js += "smalldoc.DATA=" + json.dumps(self.toJSON()) + ";"
+			with open(os.path.join(templates, "html-5.0.9.js")) as f: js += f.read()
+			with open(os.path.join(templates, "smalldoc.js"))   as f: js += f.read()
+			js += "smalldoc.loadCSS();smalldoc.load('api.json');smalldoc.setup();"
+			stream.write(js)
 
 # EOF - vim: ts=4 sw=4 noet

@@ -2,17 +2,21 @@ PROJECT      =smalldoc
 SOURCES_SJS  =$(wildcard src/smalldoc/templates/*.sjs)
 SOURCES_PCSS =$(wildcard src/smalldoc/templates/*.pcss)
 SOURCES_PAML =$(wildcard src/smalldoc/templates/*.paml)
-BUILD_EXTRA  =$(SOURCES_SJS:%.sjs=%.js) $(SOURCES_SJS:%.pcss=%.css) $(SOURCES_SJS:%.paml=%.html)
+BUILD_EXTRA  =$(SOURCES_SJS:%.sjs=%.js) $(SOURCES_PCSS:%.pcss=%.css) $(SOURCES_PAML:%.paml=%.html)
 DIST_EXTRA   =$(BUILD_EXTRA)
 
+include Makefile.pymodule
+
 %.html: %.paml
-	paml $< > $@
+	@echo "$(GREEN)📝  $@ [PAML]$(RESET)"
+	@paml $< | sed 's|\.sjs|\.js|g;s|\.pcss|\.css|g' > $@
 
 %.css: %.pcss
-	pcss $< > $@
+	@echo "$(GREEN)📝  $@ [PCSS]$(RESET)"
+	@pcss $< | cssmin > $@
 
 %.js: %.sjs
-	sugar -cljs $< > $@
+	@echo "$(GREEN)📝  $@ [SJS]]$(RESET)"
+	@sugar -cljs $< | closure-compiler > $@
 
-include Makefile.pymodule
 #EOF

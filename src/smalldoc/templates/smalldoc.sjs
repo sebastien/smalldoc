@@ -7,6 +7,7 @@
 	active  : []
 	symbols : {}
 }
+
 @shared GROUPS = [
 	"parent"
 	"module"
@@ -191,10 +192,22 @@
 				html a ({href:"#" + r[1]}, r[1])
 			)
 		)
+	elif name == "defines"
+		let k = r[1]
+		let v = STATE symbols [r[2]]
+		return html span (
+			{_:"defines"}
+			html span (
+				{_:"name", data-type:_getGroup(s)}
+				k, "=", html a ({href:"#" + r[1]}, r[1])
+			)
+		)
+
 	else
 		return None
 	end
 @end
+
 # -----------------------------------------------------------------------------
 #
 # HELPERS
@@ -258,13 +271,5 @@
 	end
 	return name
 @end
-
-# -----------------------------------------------------------------------------
-#
-# INIT
-#
-# -----------------------------------------------------------------------------
-
-load ()
 
 # EOF
