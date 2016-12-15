@@ -32,6 +32,7 @@ MOD_INHERITED       = "inherited"
 
 REL_SLOT            = "slot"
 REL_EXTENDS         = "extends"
+REL_ARGUMENTS       = "arguments"
 
 KEYS_ORDER = (
 	KEY_PARENT,
@@ -92,56 +93,49 @@ class Element(object):
 	serialized to a consistent JSON format that can be easily processed
 	using JavaScript."""
 
-	def __init__( self, id=None, name=None, type=None, parent=None, tags=None, documentation=None, source=None, range=None ):
-		self.id            = id
-		self.name          = name
-		self.type          = type
-		self.tags          = tags
-		self.parent        = parent
-		self.documentation = documentation
-		self.source        = source
-		self.range         = range
-		self.children      = []
-		self.relations     = []
+	def __init__( self, id=None, name=None, type=None, parent=None, tags=None, documentation=None, representation=None, source=None, range=None ):
+		self.id             = id
+		self.name           = name
+		self.type           = type
+		self.tags           = tags
+		self.parent         = parent
+		self.documentation  = documentation
+		self.representation = representation
+		self.source         = source
+		self.range          = range
+		self.children       = []
+		self.relations      = []
 
-	def addRelation( self, verb, subject, object ):
-		self.relations.append((verb, subject, object))
+	def addRelation( self, verb, *objects ):
+		self.relations.append([verb] + list(objects))
+		return self
 
 	def setSlot( self, name, value ):
 		self.children.append((name, value))
-		return self
-
-	def setName( self, name ):
-		self.name = name
 		return self
 
 	def addChild( self, name, element ):
 		self.children.append((name, element))
 		return self
 
-	def setDocumentation( self, text ):
-		self.documentation = text
-		return self
-
 	def toJSON( self ):
 		return dict((k,v) for k,v in dict(
-			id            = self.id,
-			name          = self.name,
-			type          = self.type,
-			tags          = self.tags,
-			parent        = self.parent.id if self.parent else None,
-			documentation = self.documentation,
-			source        = self.source,
-			range         = self.range,
-			children      = [(
+			id             = self.id,
+			name           = self.name,
+			type           = self.type,
+			tags           = self.tags,
+			parent         = self.parent.id if self.parent else None,
+			documentation  = self.documentation,
+			representation = self.representation,
+			source         = self.source,
+			range          = self.range,
+			children       = [(
 				_[0],
 				_[1].toJSON() if isinstance(_[1],Element) else _[1],
 			) for _ in self.children or () ],
-			relations     = [(
-				_[0],
-				_[1].id if isinstance(_[1],Element) else _[1],
-				_[2].id if isinstance(_[2],Element) else _[2]
-			) for _ in self.relations or ()]
+			relations     = [[
+				_.id if isinstance(_,Element) else _ for _ in r
+			] for r in self.relations or ()]
 		).items() if v)
 
 # -----------------------------------------------------------------------------

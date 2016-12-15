@@ -10,6 +10,10 @@
 		<div#smalldoc
 			<div#containers
 			<div#description
+				<div.name
+				<div.representation
+				<div.documentation
+				<div.code
 			<div#hidden
 				<div#container-0.container
 				<div#container-1.container

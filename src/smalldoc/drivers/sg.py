@@ -31,19 +31,46 @@ class SugarDriver(Driver):
 			self.onModule(module)
 
 	def onModule( self, model ):
-		e = self.documenter.createModule(name=model.getName(), id=self._getID(model))
+		e = self.documenter.createModule(
+			name=model.getName(),
+			id=self._getID(model),
+			documentation=self._getDocumentation(model)
+		)
 		# TODO: Add dependencies
 		# TODO: Add source offsets
 		return self.documenter.addElement(self._setSlots(model, e))
 
 	def onFunction( self, model ):
-		e = self.documenter.createFunction(name=model.getName(), id=self._getID(model), tags=self._getTags(model))
+		e = self.documenter.createFunction(
+			name=model.getName(),
+			id=self._getID(model),
+			tags=self._getTags(model),
+			documentation=self._getDocumentation(model),
+		)
+		args = []
+		for arg in model.getArguments():
+			a = arg.getName()
+			if arg.getTypeDescription(): a += ":" + arg.getTypeDescription()
+			# FIXME: Should translate the value back to Sugar
+			if arg.isOptional(): a+="="+str(arg.getDefaultValue())
+			if arg.isRest(): a+="..."
+			if arg.isKeywordsRest(): a+="=..."
+			args.append(a)
+		e.addRelation(REL_ARGUMENTS, args)
+		a = "".join("<span class='argument'>" + _ + "</span>" for _ in args)
+		r = "<span class='name'>{0}</span><span class='arguments'>{1}</span>".format(model.getName(), a)
+		e.representation = r
 		# TODO: Add parameters and return value
 		# TODO: Add source offsets
 		return self._setSlots(model, e)
 
 	def onClass( self, model ):
-		e = self.documenter.createClass(name=model.getName(), id=self._getID(model), tags=self._getTags(model))
+		e = self.documenter.createClass(
+			name=model.getName(),
+			id=self._getID(model),
+			tags=self._getTags(model),
+			documentation=self._getDocumentation(model),
+		)
 		# TODO: Add parent relations
 		# TODO: Add inherited slots
 		# TODO: Add source offsets
@@ -52,7 +79,13 @@ class SugarDriver(Driver):
 	def onValue( self, model ):
 		# TODO: Add value
 		# TODO: Add source offsets
-		return self.documenter.createElement(name=model.getName(), id=self._getID(model), tags=self._getTags(model), type=KEY_VALUE)
+		return self.documenter.createElement(
+			name=model.getName(),
+			id=self._getID(model),
+			tags=self._getTags(model),
+			type=KEY_VALUE,
+			documentation=self._getDocumentation(model),
+		)
 
 	# =========================================================================
 	# HELPERS
@@ -81,6 +114,13 @@ class SugarDriver(Driver):
 			element.setSlot(name, self.on(value))
 		self.scopes.pop()
 		return element
+
+	def _getDocumentation( self, model, markup="texto" ):
+		doc = model.getDocumentation()
+		if doc:
+			return self.render(doc.getContent(), markup)
+		else:
+			return None
 
 	def _getTags( self, model ):
 		res = []

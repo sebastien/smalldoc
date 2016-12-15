@@ -9,11 +9,25 @@
 # Last modification : 2016-12-09
 # -----------------------------------------------------------------------------
 
+try:
+	import texto.parser, texto.main
+except ImportError as e:
+	texto = None
+
 class Driver(object):
 
 	def __init__( self, documenter ):
 		self.documenter = documenter
 		self.scopes     = []
+
+	def render( self, text, markup ):
+		if markup == "texto":
+			first_line_indent = texto.parser.Parser.getIndentation(text[:text.find("\n")])
+			text_indent = texto.parser.Parser.getIndentation(text)
+			text = " " * (text_indent - first_line_indent) + text
+			return texto.main.text2htmlbody(text.decode("utf8"))
+		else:
+			raise NotImplementedError
 
 	def toJSON( self ):
 		return self.documenter.toJSON()

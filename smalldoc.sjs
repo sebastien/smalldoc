@@ -4,7 +4,8 @@
 
 @shared DATA    = None
 @shared STATE   = {
-	active : []
+	active  : []
+	symbols : {}
 }
 @shared GROUPS = [
 	"parent"
@@ -39,11 +40,17 @@
 	_showContainer "__root__"
 	let n = (symbol or "") split "."
 	n reduce ({r,e|_showContainer (if r -> r + "." + e | e)}, "")
-	let c = n length
-	console log ("C", c, "/", n)
-	var node = document getElementById "containers"
-	while node childNodes length < 3
-		node appendChild (document getElementById ("container-" + (3 - node childNodes length)))
+	# NOTE: Removed for now
+	# let c = n length
+	# var node = document getElementById "containers"
+	# while node childNodes length < 2
+	# 	node appendChild (document getElementById ("container-" + (3 - node childNodes length)))
+	# end
+	var s = STATE symbols [symbol]
+	if s
+		renderDescription (s)
+	else
+		console warn ("smalldoc.show: Cannot find symbol `" + symbol + "`")
 	end
 @end
 
@@ -58,10 +65,40 @@
 #
 # -----------------------------------------------------------------------------
 
+@function renderDescription element
+	let node = document getElementById "description"
+	while node firstChild
+		node removeChild (node firstChild)
+	end
+	# Description
+	let parents = element id split "." ; let name = parents pop ()
+	node appendChild (html div (
+		{_:"overview"}
+		html h1 (
+			html span ({_:"type"}, _getGroup (element))
+			html span ({_:"parents"}, parents map {
+				html span ({_:"parent name"}, _)
+			})
+			html span ({_:"name"}, element name or name)
+		)
+	))
+	# Representation
+	if element representation
+		let r = html div ({_:"representation"})
+		r innerHTML = element representation
+		node appendChild (r)
+	end
+	let d = html div ({_:"documentation"})
+	d innerHTML = element documentation or "<div class='undocumented'>Undocumented</div>"
+	node appendChild (d)
+@end
+
 @function renderContainer data, name
+	let names  = (data id or data name or "__root__") split "."
+	let parent = if names length > 1 -> names[names length - 2] | "__root__"
 	return _addContainer (html div (
 		{_:"container",data-type:data type or "generic", id:data id or data name or "__root__"}
-		html div ({_:"name"}, name)
+		html div ({_:"name"}, html a ({href:"#" + parent}, name))
 		_getGroups (data children) map {renderGroup (_[1], _[0])}
 	))
 @end
@@ -77,10 +114,11 @@
 @function renderSlots slots
 	return html ul (
 		{_:"slots"}
-		slots map {
-			_[1] children and renderContainer (_[1], _[1] id or _[0]) and False
+		slots map {s|
+			var a = _[1] children and renderContainer (_[1], _[1] id or _[0])
+			var b = {_|STATE symbols [s[1] id or s[0]] = s[1]}()
 			html div (
-				{_:"slot", data-type:_[1] type, id:"slot:" + (_[1] id or _[0])}
+				{_:"slot" + (if _[1] documentation -> "" | " undocumented"), data-type:_[1] type, id:"slot:" + (_[1] id or _[0])}
 				html a (
 					{href:"#" + _[1] id or _[0]}
 					_[0]
@@ -100,7 +138,7 @@
 	return GROUPS find {(element tags or []) indexOf (_) > -1} or element type or "value"
 @end
 
-@function _getGroups elements:List, sort=False
+@function _getGroups elements:List, sort=True
 	let g =	elements reduce ({r,e|
 		let k = _getGroup (e[1])
 		r[k] ?= []
@@ -109,8 +147,10 @@
 	}, {})
 	let r = GROUPS reduce ({r,e|
 		let l = g[e]
-		if sort -> [] concat (l) sort {a,b|a[0] localeCompare (b[0])}
-		if typeof (l) == "object" -> r push [e, l]
+		if typeof (l) == "object"
+			if sort -> l sort {a,b|return a[0] localeCompare (b[0])}
+			r push [e, l]
+		end
 		r
 	}, [])
 	return r

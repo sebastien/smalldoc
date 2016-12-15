@@ -1,5 +1,7 @@
 COLOR_ACCENT    = #EAE08C
 COLOR_ACCENT_05 = #EAE08CA0
+COLOR_CONTRAST  = #CDB425
+COLOR_GREY_LT   = #B0C0C0
 COLOR_BG        = #FCFCF6
 
 html, body:
@@ -17,7 +19,6 @@ a, a:active, a:link, a:visited, a:hover:
 	transition-property: color,background-color
 	transition-duration: 0.15s
 
-
 code:
 	color: #8fb216
 
@@ -26,7 +27,14 @@ code, pre:
 
 .name:
 	&, a:
-		color: #cdb425
+		color: $COLOR_CONTRAST
+
+.type:
+	color: $COLOR_CONTRAST
+
+.undocumented:
+	font-style: italic
+	opacity: 0.5
 
 .slots:
 	padding: 0em
@@ -72,19 +80,19 @@ code, pre:
 		margin-top: 1em
 		&:before:
 			content: ""
-			width: 14px
 			text-align: center
 			display: none
 			opacity: 0.5
 			font-style: italic
+			padding-right: 5px
 	&[data-type="function"] > .name:before:
-		content: "λ"
+		content: "function"
 		display: inline-block
 	&[data-type="module"] > .name:before:
-		content: "M"
+		content: "module"
 		display: inline-block
 	&[data-type="class"] > .name:before:
-		content: "C"
+		content: "class"
 		display: inline-block
 
 #smalldoc:
@@ -98,6 +106,73 @@ code, pre:
 	background: white
 	border-right: 1px solid #f0f0f0
 	display: flex
+
+#description:
+	flex-grow: 2
+	padding: 10pt
+
+	.overview:
+		padding-left: 10pt
+		.type:
+			padding-right: 5px
+			opacity: 0.5
+		.parents:
+			.parent:
+				opacity: 0.5
+				display: none
+				&:after:
+					content: "."
+				&:last-child:
+					display: inline
+					opacity: 1.0
+	.representation:
+		border-top: 1px solid $COLOR_ACCENT_05
+		border-bottom: 1px solid $COLOR_ACCENT_05
+		margin-bottom: -1px
+		position: relative
+		margin-top: 1.25em
+		padding: 20pt
+		margin-left: -10pt
+		margin-right: -10pt
+		background: #FBF8E1
+		font-size: 150%
+		line-height: 1.25em
+		.arguments:
+			&:before:
+				content:" ("
+				opacity: 0.5
+			&:after:
+				content:")"
+				opacity: 0.5
+			.argument:
+				&:after:
+					content:", "
+					opacity: 0.5
+				&:last-child:after:
+					content:""
+
+	.documentation :
+		font-size: 13px
+		line-height: 1.5em
+		border-top: 1px solid #f0f0f0
+		border-bottom: 1px solid #f0f0f0
+		background: white
+		margin-left: -10pt
+		margin-right: -10pt
+		padding: 20pt
+		color: #808080
+
+		p:
+			max-width: 45em
+
+		ul:
+			margin-left: 0em
+			padding-left: 10pt
+			list-style-type: circle
+
+		li:
+			padding-left: 5pt
+
 
 #hidden:
 	display: none
@@ -160,27 +235,6 @@ REMOVED:
 		display: none
 		padding: 10pt
 
-	#smalldoc .representation:
-		margin-top: 1.25em
-		margin-bottom: 0em
-		padding: 20pt
-		margin-left: -10pt
-		margin-right: -10pt
-		background: #FBF8E1
-		font-size: 120%
-		line-height: 1.25em
-
-
-
-
-
-
-
-	#smalldoc .prefix:
-		color: #D0C0C0
-		font-style: italic
-		padding-right: 5px
-
 
 	#smalldoc .noattributes 
 		color: #D0C0C0
@@ -208,28 +262,6 @@ REMOVED:
 		color: #b0c0c0
 		font-style: italic
 
-	#smalldoc .docstring :
-		font-size: 13px
-		line-height: 1.5em
-		border-top: 1px solid #f0f0f0
-		border-bottom: 1px solid #f0f0f0
-		background: white
-		margin-left: -10pt
-		margin-right: -10pt
-		padding: 20pt
-		color: #808080
-
-
-	#smalldoc .docstring p:
-		max-width: 45em
-
-	#smalldoc .docstring ul:
-		margin-left: 0em
-		padding-left: 10pt
-		list-style-type: circle
-
-	#smalldoc .docstring li:
-		padding-left: 5pt
 
 	#smalldoc table caption:
 		font: 8pt/14pt "Lucida Grande", "Lucida", Helvetica, sans-serif
