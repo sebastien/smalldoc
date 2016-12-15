@@ -33,6 +33,8 @@
 
 import os, sys, types, string, fnmatch, re, pprint
 import smalldoc
+from   .model      import Documenter
+from   .drivers.sg import SugarDriver
 
 # Kiwi support allows to expand the markup within Smalldoc
 try:
@@ -705,13 +707,7 @@ class LambdaFactoryDocumenter(Documenter):
 #
 # ------------------------------------------------------------------------------
 
-OPT_PYTHONPATH = "Extends the PYTHONPATH with the given path"
-OPT_ACCEPTS    = "Glob that matches modules names that will also be documented"
-OPT_COMPACT    = "Outputs a compact HTML (slower)"
-OPT_MARKUP     = "Uses the given markup ('none', 'rst' or 'texto') to process docstrings"
-OPT_BODY       = "Only outputs the HTML document body."""
-OPT_TITLE      = "Specifies the title to be used in the resulting HTML"
-OPT_ENCODING   = "Specifies the encoding of the strings found in the given modules"
+
 DESCRIPTION    = """\
 Smalldoc is a Python API documentation generator that produce interactive,
 JavaScript-based documentation that have a SmallTalk feel. It is inspired from
@@ -720,78 +716,74 @@ the Io Language API reference <http://www.iolanguage.com/docs/reference/>.
 See <http://www.github.com/sebastien/smalldoc> for more information."""
 USAGE          = "%prog [options] module.py module.name ... [output file]"
 
-def run( args ):
+def run( args, stdout=sys.stdout ):
 	"""Runs Smalldoc as a command line tool"""
 	if type(args) not in (type([]), type(())): args = [args]
 	from optparse import OptionParser
 	# We create the parse and register the options
 	oparser = OptionParser(prog="smalldoc", description=DESCRIPTION,
 	usage=USAGE, version="Smalldoc " + __version__)
-	oparser.add_option("-p", "--path", action="append", dest="pythonpath",
-		help=OPT_PYTHONPATH)
+	oparser.add_option("-o", "--output", action="append", dest="output",
+		help="Outputs the documentation to the given file (format will be detected based on extension)")
+	oparser.add_option("-p", "--path", action="append", dest="path",
+		help="Extends the PYTHONPATH with the given path")
 	oparser.add_option("-a", "--accepts", action="append", dest="accepts",
-		help=OPT_ACCEPTS)
+		help="Glob that matches modules names that will also be documented")
 	oparser.add_option("-c", "--compact", action="store_true", dest="compact",
-		help=OPT_COMPACT)
-	oparser.add_option("-m", "--markup", action="store", dest="markup",
-		help=OPT_MARKUP, default="rst")
+		help="Outputs a compact HTML (slower)")
+	oparser.add_option("-m", "--markup", action="store", dest="markup", default=None,
+		help="Uses the given markup ('none', 'rst' or 'texto') to process docstrings")
 	oparser.add_option("-b", "--body", action="store_true", dest="body",
-		help=OPT_BODY)
+		help="Only outputs the HTML document body.")
 	oparser.add_option("-t", "--title", dest="title",
-		help=OPT_TITLE)
-	oparser.add_option("-e", "--encoding", dest="encoding", default="utf-8",
-		help=OPT_ENCODING)
+		help="Title for the generated documentation")
+	oparser.add_option("-f", "--format", dest="format", default="html", choices=("json", "html", "js"),
+		help="Specifies the output format, used when format cannot be guessed from output.")
 	# We parse the options and arguments
 	options, args = oparser.parse_args(args=args)
-	documenter = Documenter(options.accepts, encoding=options.encoding)
-	documenter._markup = options.markup
-	lf_documenter = None
 	# We modify the sys.path
 	if options.pythonpath:
 		options.pythonpath.reverse()
 		for arg in options.pythonpath:
 			log("Adding path '%s'..." % (arg))
 			sys.path.insert(0, arg)
+	documenter = Documenter()
+	drivers = {
+		"py" : None,
+		"sg" : SugarDriver(documenter)
+	}
 	# And now document the module
-	target_html   = None
-	sugar_modules = []
 	for arg in args:
-		if arg.endswith(".py"):
+		_, ext = os.path.splitext(arg)
+		if ext == ".py":
 			dir_path = os.path.abspath(os.path.dirname(arg))
 			if dir_path not in sys.path: sys.path.append(dir_path)
 			arg = os.path.basename(arg)
 			arg = os.path.splitext(arg)[0]
-			documenter.documentModule(arg)
-		elif arg.endswith(".sjs"):
-			sugar_modules.append(arg)
-		elif arg.lower().endswith(".html"):
-			target_html = arg
+			drivers["py"].parseModule(arg)
+		elif ext in (".spy", ".sjs", ".sg"):
+			drivers["sg"].parse
+		elif ext in (".html", ".json", ".js"):
+			options.outputs.append(arg)
 		else:
-			documenter.documentModule(arg)
-	if sugar_modules:
-		documenter = LambdaFactoryDocumenter() if not isinstance(documenter, LambdaFactoryDocumenter) else documenter
-		import sugar.main
-		program    = sugar.main.run(["-clnone", "-Llib/sjs"] + sugar_modules)
-		for module in program.getModules():
-			if module.isImported(): continue
-			documenter.documentModule(module)
-	# We eventually return the HTML file
+			drivers["py"].parseModule(arg)
 	if args:
-		title = options.title or "Python API documentation (Smalldoc)"
-		html = documenter.toHTML(title=title)
-		if options.compact: html = compact_html(html)
+		title = options.title or "API"
+		for o in options.output:
+			_, ext = os.path.splitext(o)
+			f = ext[1:] if ext in (".html", ".json", ".js") else options.format
+			if o == "-":
+				o = stdout
+				documenter.write(o, f)
+			else:
+				with open(o, "w") as s:
+					documenter.write(s, f)
 	else:
 		html = ""
 		oparser.print_help()
-	if options.body:
-		html = html.split("<!-- body -->")[1]
-	# And optionnaly save the html
-	if target_html:
-		open(target_html, "w").write(html)
-		html = "HTML documentation generated: " + target_html
 	return html
 
 if __name__ == "__main__":
-	print run(sys.argv[1:])
+	run(sys.argv[1:])
 
 # EOF

@@ -173,4 +173,12 @@ class Documenter(object):
 	def toJSON( self ):
 		return {"children":[[_.name or _.id, _.toJSON()] for _ in self.elements]}
 
+	def toHTML( self ):
+		return {"children":[[_.name or _.id, _.toJSON()] for _ in self.elements]}
+
+	def write( self, stream, format ):
+		if format == "json":
+			json.dump(self.toJSON(), stream)
+		elif format == "html":
+
 # EOF - vim: ts=4 sw=4 noet

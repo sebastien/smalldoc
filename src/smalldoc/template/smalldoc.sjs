@@ -20,11 +20,15 @@
 	"value"
 ]
 
+@function loadCSS
+	document head appendChild (html link {href:"https://fonts.googleapis.com/css?family=Fira+Mono|Fira+Sans",rel:"stylesheet"})
+@end
+
 @function load path="data.json"
 	fetch (path) then {_ json () then (setup)}
 @end
 
-@function setup data
+@function setup data=DATA
 	DATA = data
 	# Ensures the basic structure
 	let ensure = {id,parent,callback|

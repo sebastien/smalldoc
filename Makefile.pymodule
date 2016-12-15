@@ -15,11 +15,13 @@ SOURCES_PY     ?=$(wildcard src/*.py) $(wildcard src/*/*.py) $(wildcard src/*/*/
 SOURCES_BIN    ?=$(wildcard bin/*)
 SOURCES_TXTO   ?=$(wildcard doc/*.txto)
 SOURCES_MD     ?=$(wildcard *.md doc/*.md)
-SOURCES_ALL    ?=$(SOURCES_PY) $(SOURCES_TXTO) $(SOURCES_MD)
+SOURCES_EXTRA  ?=
+SOURCES_ALL    ?=$(SOURCES_PY) $(SOURCES_TXTO) $(SOURCES_MD) $(SOURCES_EXTRA)
 
 # === BUILD ===================================================================
 
-BUILD_ALL      ?= MANIFEST $(wildcard setup.py)
+BUILD_EXTRA    ?=
+BUILD_ALL      ?= MANIFEST $(wildcard setup.py) $(BUILD_EXTRA)
 
 # === DIST ====================================================================
 
