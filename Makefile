@@ -10,13 +10,16 @@ include Makefile.pymodule
 %.html: %.paml
 	@echo "$(GREEN)📝  $@ [PAML]$(RESET)"
 	@paml $< | sed 's|\.sjs|\.js|g;s|\.pcss|\.css|g' > $@
+	@chmod -w $@
 
 %.css: %.pcss
 	@echo "$(GREEN)📝  $@ [PCSS]$(RESET)"
 	@pcss $< | cssmin > $@
+	@chmod -w $@
 
 %.js: %.sjs
 	@echo "$(GREEN)📝  $@ [SJS]]$(RESET)"
 	@sugar -cljs $< | closure-compiler > $@
+	@chmod -w $@
 
 #EOF

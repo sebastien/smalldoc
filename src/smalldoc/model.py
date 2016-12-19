@@ -189,8 +189,7 @@ class Documenter(object):
 			data = json.dumps(self.toJSON())
 			html = html.replace('<link href="smalldoc.css" rel="stylesheet" />', "<style>" + css + "</style>")
 			html = html.replace(' src="html-5.0.9.js">', ">" + jsh)
-			html = html.replace(' src="smalldoc.js">',   ">" + jss + ";smalldoc.setup(" + data + ");")
-			html = html.replace('data-url="data.json"', "")
+			html = html.replace(' src="smalldoc.js">',   ">" + jss + ";smalldoc.load('api.json');smalldoc.setup(" + data + ");")
 			stream.write(html)
 		elif format == "js":
 			js  = ""

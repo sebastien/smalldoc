@@ -764,8 +764,7 @@ def run( args, stdout=sys.stdout ):
 		title = options.title or "API"
 		for o in options.output or ("-"):
 			_, ext = os.path.splitext(o)
-			#f = ext[1:] if ext in (".html", ".json", ".js") else options.format
-			f = "html"
+			f = ext[1:] if ext in (".html", ".json", ".js") else options.format
 			if o == "-":
 				o = stdout
 				documenter.write(o, f)

@@ -1,8 +1,17 @@
 @module smalldoc
 | Renders `smalldoc` JSON data into a Smalltalk-like documentation browser. The resulting
 | document will ony work on modern browsers.
+|
+| The `smalldoc` module currently implements a simple flat (non-OOP) API, in order to
+| minimize dependencies ― the drawback of this approach is that ther can only
+| be one instance per document.
 
+@shared FONTS   = "Fira+Mono|Fira+Sans"
 @shared DATA    = None
+@shared OPTIONS = {
+	containers : 3
+	data       : "api.json"
+}
 @shared STATE   = {
 	active  : []
 	symbols : {}
@@ -21,53 +30,60 @@
 	"value"
 ]
 
-@function loadCSS
-	document head appendChild (html link {href:"https://fonts.googleapis.com/css?family=Fira+Mono|Fira+Sans",rel:"stylesheet"})
+@function loadCSS fonts=FONTS
+	let node = html link {href:"https://fonts.googleapis.com/css?family=" + fonts,rel:"stylesheet"}
+	document head appendChild (node)
+	return node
 @end
 
-@function load path="data.json"
+@function load path=OPTIONS data
 	fetch (path) then {_ json () then (setup)}
 @end
 
 @function setup data=DATA
 	DATA = data
-	# Ensures the basic structure
-	let ensure = {id,parent,callback|
-		var node = document getElementById (id)
-		if not node
-			node = html div {id:id}
-			if callback
-				callback (node)
-			end
-			parent appendChild (node)
-		end
-		node
-	}
-	let n = ensure ("smalldoc", document body)
-	ensure ("containers",  n)
-	ensure ("description", n)
-	ensure ("hidden",      n)
-	ensure ("about",       n, {_ innerHTML = "<a href='https://github.com/sebastien/smalldoc'>smalldoc</a>"})
+	let n = ensureNode ("smalldoc", document body)
+	ensureNode ("containers",  n)
+	ensureNode ("description", n)
+	ensureNode ("hidden",      n)
+	ensureNode ("about",       n, {_ innerHTML = "<a href='https://github.com/sebastien/smalldoc'>smalldoc</a>"})
 	render (data)
 	window addEventListener ("hashchange", onHashChange)
 	onHashChange ()
 @end
 
-@function render data
-	renderContainer (_, "Smalldoc")
+@function ensureNode:Node id:String, parent:Node, callback:Function=Undefined
+| Ensures that there's an elment with the given `id`, if not
+| creates, feeds it to the given `callback` (optional) and adds it
+| to the given `parent`.
+	var node = document getElementById (id)
+	if not node
+		node = html div {id:id}
+		if callback
+			callback (node)
+		end
+		parent appendChild (node)
+	end
+	return node
 @end
 
-@function show symbol
+@function render data
+	renderContainer (data, "Smalldoc", "document")
+@end
+
+@function show symbol, containers=OPTIONS containers
 	_clearContainers ()
 	_showContainer "__root__"
 	let n = (symbol or "") split "."
 	n reduce ({r,e|_showContainer (if r -> r + "." + e | e)}, "")
-	# NOTE: Removed for now
-	# let c = n length
-	# var node = document getElementById "containers"
-	# while node childNodes length < 2
-	# 	node appendChild (document getElementById ("container-" + (3 - node childNodes length)))
-	# end
+	# Ensures that there is a least M containers
+	let c    = n length
+	var node = document getElementById "containers"
+	while node childNodes length < containers
+		var i = (containers - node childNodes length)
+		node appendChild (ensureNode ("container-" + i, node, {_ classList add "container"}))
+	end
+	# We retrieve the symbol with the given name
 	var s = STATE symbols [symbol]
 	if s
 		renderDescription (s)
@@ -120,12 +136,35 @@
 	node appendChild (n)
 @end
 
-@function renderContainer data, name
+@function renderName:Element name:String, type:String=Undefined
+| Renders a symbol name.
+	let names  = (name or "__root__") split "."
+	let parent = if names length > 1 -> names[names length - 2] | "__root__"
+	let n      = names pop ()
+	return html div (
+		{_:"name", data-type:type, data-name:name}
+		html span {_:"type"}
+		html span (
+			{_:"parents", data-count:"" + parent length}
+			names map {html span ({_:"parent"}, _)}
+		)
+		html span ({_:"symbol"}, n)
+	)
+@end
+
+@function renderContainer data, name, type=None
 	let names  = (data id or data name or "__root__") split "."
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
+	type       = type or data type or (if name == "__root__" -> "root" | "generic")
 	return _addContainer (html div (
-		{_:"container",data-type:data type or "generic", id:data id or data name or "__root__"}
-		html div ({_:"name"}, html a ({href:"#" + parent}, name))
+		{_:"container",data-type:type, id:data id or data name or "__root__"}
+		html div (
+			{_:"title"}
+			html a (
+				{href:"#" + parent}
+				renderName (name, type)
+			)
+		)
 		_getGroups (data children) map {renderGroup (_[1], _[0])}
 	))
 @end
@@ -145,10 +184,10 @@
 			var a = _[1] children and renderContainer (_[1], _[1] id or _[0])
 			var b = {_|STATE symbols [s[1] id or s[0]] = s[1]}()
 			html div (
-				{_:"slot" + (if _[1] documentation -> "" | " undocumented"), data-type:_[1] type, id:"slot:" + (_[1] id or _[0])}
+				{_:"slot" + (if s[1] documentation -> "" | " undocumented"), data-type:s[1] type, id:"slot:" + (s[1] id or s[0])}
 				html a (
-					{href:"#" + _[1] id or _[0]}
-					_[0]
+					{href:"#" + s[1] id or s[0]}
+					renderName (s[0], s[1] type)
 				)
 			)
 		}
@@ -160,7 +199,6 @@
 	let d    = (element relations or []) reduce ({r,e|
 		let k = e[0]
 		if keys indexOf (k) == -1 -> keys push (k)
-		console log ("R", e, ":", r)
 		r[k] ?= []
 		r[k] push (e)
 		r
@@ -199,7 +237,9 @@
 			{_:"defines"}
 			html span (
 				{_:"name", data-type:_getGroup(s)}
-				k, "=", html a ({href:"#" + r[1]}, r[1])
+				k
+				"="
+				html a ({href:"#" + r[1]}, r[1])
 			)
 		)
 

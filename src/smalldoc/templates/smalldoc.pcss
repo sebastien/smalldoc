@@ -1,8 +1,17 @@
 COLOR_ACCENT    = #EAE08C
-COLOR_ACCENT_05 = #EAE08CA0
+COLOR_ACCENT_05 = #EAE08C80
+COLOR_ACCENT_02 = #EAE08C40
 COLOR_CONTRAST  = #CDB425
 COLOR_GREY_LT   = #B0C0C0
 COLOR_BG        = #FCFCF6
+
+COLOR_SELECTABLE_HOVER_BG = $COLOR_ACCENT_05
+COLOR_SELECTED            = $COLOR_ACCENT
+COLOR_SELECTED_BD         = $COLOR_ACCENT
+COLOR_SELECTED_BG         = $COLOR_ACCENT
+CONTAINER_WIDTH = 180px
+
+@unit pad = 10px
 
 html, body:
 	background : $COLOR_BG
@@ -26,15 +35,42 @@ code, pre:
 	font-family: "Fira Mono", monospace
 
 .name:
-	&, a:
-		color: $COLOR_CONTRAST
+	display: flex
+	.parents:
+		flex-grow: 0
+		text-overflow: ellipsis
+		overflow: hidden
+		opacity: 0.5
+		.parent:after:
+			content:"."
+			&:last-child:
+				display:none
+	.type:
+		color: #D0C0C0
+		font-style: italic
+		flex-basis: 13px
+		margin-right: 3px
+	.type:before:
+		content: "•"
+	.symbol:
+		flex-grow: 100
+	&[data-type="document"] .type:before:
+		content: "🕮"
+		font-style: normal
+	&[data-type="function"] .type:before:
+		content: "λ"
+	&[data-type="module"] .type:before:
+		content: "M"
+	&[data-type="class"] .type:before:
+		content: "C"
 
 .type:
 	color: $COLOR_CONTRAST
 
 .undocumented:
 	font-style: italic
-	opacity: 0.5
+	.parents, .symbol:
+		opacity: 0.5
 
 .slots:
 	padding: 0em
@@ -42,42 +78,45 @@ code, pre:
 	.slot:
 		list-style-type: none
 		padding: 0em
+		margin-left:  -1pad
+		margin-right: -1pad
+		padding-left:  0.5pad
+		padding-right: 1pad
+		border-left: 0.5pad solid transparent
 		&:hover:
-			background-color: $COLOR_ACCENT_05
-			border-radius: 2px
+			background-color: $COLOR_ACCENT_02
 		&.active:
-			font-weight: bold
+			background-color: $COLOR_ACCENT_05
+			border-left: 0.5pad solid $COLOR_ACCENT
 		> a:
 			display: block
-			&:before:
-				display: inline-block
-				content: "•"
-				color: #D0C0C0
-				font-style: italic
-				width: 14px
-		&[data-type="function"] > a:before:
-			content: "λ"
-		&[data-type="module"] > a:before:
-			content: "M"
-		&[data-type="class"] > a:before:
-			content: "C"
+
+
 
 .container:
 	color: #404040
 	box-sizing: border-box
 	border-left: 1px solid #f0f0f0
-	flex-grow: 1
-	padding-left:  10pt
+	flex-grow: 0
+	flex-shrink: 0
+	flex-basis: 100% / 3
+	padding-left: 1pad
+	padding-right: 1pad
 	overflow-y: auto
+	width: 100% / 3
+	min-width: $CONTAINER_WIDTH
+	max-width: 100% / 3
 	.title:
+		text-transform: capitalize
 		padding-top: 10pt
 		margin-bottom: 5pt
 		font-weight: bold
 		border-bottom: 1px solid #f0f0f0
 		color: #505050
-	.name:
 		font-weight: bold
 		margin-top: 1em
+		.name:
+			text-transform:none
 		&:before:
 			content: ""
 			text-align: center
@@ -85,15 +124,13 @@ code, pre:
 			opacity: 0.5
 			font-style: italic
 			padding-right: 5px
-	&[data-type="function"] > .name:before:
-		content: "function"
-		display: inline-block
-	&[data-type="module"] > .name:before:
-		content: "module"
-		display: inline-block
-	&[data-type="class"] > .name:before:
-		content: "class"
-		display: inline-block
+		.name:
+			&[data-type="function"] > .type:before:
+				content: "function"
+			&[data-type="module"] > .type:before:
+				content: "module"
+			&[data-type="class"] > .type:before:
+				content: "class"
 
 #smalldoc:
 	display: flex
@@ -102,17 +139,21 @@ code, pre:
 	height: 100vh
 
 #containers:
+	box-sizing: border-box
 	flex-grow:1
 	background: white
 	border-right: 1px solid #f0f0f0
 	display: flex
+	overflow-x: auto
 
 #description:
-	flex-grow: 2
+	flex-grow: 5
+	min-width: 400px
 	padding: 10pt
-
 	.overview:
 		padding-left: 10pt
+		h1:
+			display: flex
 		.type:
 			padding-right: 5px
 			opacity: 0.5
@@ -138,6 +179,8 @@ code, pre:
 		background: #FBF8E1
 		font-size: 150%
 		line-height: 1.25em
+		.name:
+			display: inline
 		.arguments:
 			&:before:
 				content:" ("

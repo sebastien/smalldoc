@@ -25,7 +25,7 @@ class SugarDriver(Driver):
 	"""Parses Sugar source files and generates the smalldoc model."""
 
 	def parsePath( self, path ):
-		program    = sugar.main.run(["-clnone", "-Llib/sjs", "-Lsrc/sjs"] + ["-L" + _ for _ in self.path] + [path])
+		program    = sugar.main.run(["-clnone", "-Llib/sjs", "-Lsrc/sjs"] + ["-L" + _ for _ in self.path or ()] + [path])
 		for module in program.getModules():
 			if module.isImported(): continue
 			self.onModule(module)
