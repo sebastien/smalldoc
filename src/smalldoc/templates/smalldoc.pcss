@@ -140,7 +140,7 @@ code, pre:
 
 #containers:
 	box-sizing: border-box
-	flex-grow:1
+	flex-basis: 3 * $CONTAINER_WIDTH + 3px
 	background: white
 	border-right: 1px solid #f0f0f0
 	display: flex
@@ -241,62 +241,9 @@ code, pre:
 	text-align: right
 
 REMOVED:
-	#descriptions:
-		padding: 0
-		margin: 0
-		flex-grow: 3
-
-
-	#options:
-		display: none
-		text-align: right
-
-	#options label:
-		font-weight: bold
-		padding-left: 10px
-
-	#containers
-		width: 150px
-		padding:0
-		padding-left: 5pt
-		padding-right: 10pt
-		background: white
-		border-right: 1px solid #f0f0f0
-		overflow: auto
-		display: flex
-		flex-grow: 0
-
-	#modules ul:
-		margin: 0
-		padding: 0
-
-	#modules ul li:
-		list-style-type: none
-		padding: 0
-
-	#hidden:
-		padding: 0
-		margin: 0
-		display: none
-
-	#containers
-		width: 400px
-
-	#smalldoc:
-		display: flex
-		align-items: stretch
-		width: 100%
-		height: 100vh
-
-	#smalldoc .description:
-		display: none
-		padding: 10pt
-
-
 	#smalldoc .noattributes 
 		color: #D0C0C0
 		font-style: italic
-
 
 	#smalldoc .name.parent, #smalldoc .name.parent a:
 		font-weight: normal

@@ -9,10 +9,15 @@
 # Last modification : 2016-12-09
 # -----------------------------------------------------------------------------
 
+import re
+from   functools import reduce
+
 try:
 	import texto.parser, texto.main
 except ImportError as e:
 	texto = None
+
+RE_INDENT = re.compile("^([\t ]*)")
 
 class Driver(object):
 
@@ -20,6 +25,20 @@ class Driver(object):
 		self.documenter = documenter
 		self.scopes     = []
 		self.path       = path
+		self._sources   = {}
+
+	def readSource( self, path, start=None, end=None):
+		text = self._sources.get(path)
+		if path not in self._sources:
+			with open(path) as f:
+				text = f.read()
+				self._sources[path] = text
+		if start is None and end is None:
+			return text
+		elif start is None:
+			return text[:end]
+		else:
+			return text[start:end]
 
 	def render( self, text, markup ):
 		if markup == "texto":
@@ -32,5 +51,33 @@ class Driver(object):
 
 	def toJSON( self ):
 		return self.documenter.toJSON()
+
+	def _getLineIndent( self, line, match=None ):
+		return (match or RE_INDENT.match(line)).group().replace("\t", " ")
+
+	def _getLinesIndent( self, lines ):
+		indent = [len(self._getLineIndent(_)) for _ in lines]
+		if   len(indent) == 0:
+			return 0
+		elif len(indent) == 1:
+			return indent[0]
+		else:
+			return reduce(min, indent[1:])
+
+	def _reindentLine( self, line, delta ):
+		indent = RE_INDENT.match(line).group()
+		i      = 0
+		while delta > 0 and indent:
+			if indent[0] == '\t':
+				delta -= 4
+			else:
+				delta -= 1
+			i += 1
+		return line[i:]
+
+	def unindent( self, text ):
+		lines  = text.split("\n")
+		indent = self._getLinesIndent(lines)
+		return "\n".join(self._reindentLine(_, indent) for _ in lines)
 
 # EOF - vim: ts=4 sw=4 noet

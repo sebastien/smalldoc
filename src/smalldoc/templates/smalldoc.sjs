@@ -122,9 +122,9 @@
 	))
 	# Representation
 	if element representation
-		let r = html div ({_:"representation"})
-		r innerHTML = element representation
-		node appendChild (r)
+		let p = html pre ()
+		p innerHTML = element representation
+		node appendChild (html div ({_:"representation"}, p))
 	end
 	# Documentation
 	let d = html div ({_:"documentation"})

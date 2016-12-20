@@ -79,12 +79,15 @@ class SugarDriver(Driver):
 	def onValue( self, model ):
 		# TODO: Add value
 		# TODO: Add source offsets
+		value = model.getDefaultValue()
+
 		return self.documenter.createElement(
 			name=model.getName(),
 			id=self._getID(model),
 			tags=self._getTags(model),
 			type=KEY_VALUE,
 			documentation=self._getDocumentation(model),
+			representation=self._getRepresentation(value)
 		)
 
 	# =========================================================================
@@ -92,7 +95,7 @@ class SugarDriver(Driver):
 	# =========================================================================
 
 	def on( self, model ):
-		if isinstance(model, IFunction):
+		if isinstance(model, IFunction) or isinstance(model, IClassMethod) or isinstance(model, IMethod):
 			return self.onFunction(model)
 		elif isinstance(model, IClass):
 			return self.onClass(model)
@@ -122,6 +125,13 @@ class SugarDriver(Driver):
 		else:
 			return None
 
+	def _getRepresentation( self, model ):
+		if model and model.sourceLocation:
+			s,e,p = model.sourceLocation
+			return self.unindent(self.readSource(p,s,e))
+		else:
+			return None
+
 	def _getTags( self, model ):
 		res = []
 		if   isinstance(model, IClassAttribute): res.append(KEY_CLASS_ATTRIBUTE)
@@ -135,6 +145,7 @@ class SugarDriver(Driver):
 		if   isinstance(model, IDict):           res.append(KEY_MAP)
 		if   isinstance(model, IReference):      res.append(KEY_REFERENCE)
 		return res
+
 
 if __name__ == "__main__":
 	import sys, json
