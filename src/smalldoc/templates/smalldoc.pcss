@@ -4,6 +4,8 @@ COLOR_ACCENT_02 = #EAE08C40
 COLOR_CONTRAST  = #CDB425
 COLOR_GREY_LT   = #B0C0C0
 COLOR_BG        = #FCFCF6
+COLOR_BD        = #00000015
+COLOR_BD_05     = #00000008
 
 COLOR_SELECTABLE_HOVER_BG = $COLOR_ACCENT_05
 COLOR_SELECTED            = $COLOR_ACCENT
@@ -34,6 +36,11 @@ code:
 code, pre:
 	font-family: "Fira Mono", monospace
 
+.source:
+	.offset:
+		opacity: 0.5
+		.start:after:
+			content: " ― "
 .name:
 	display: flex
 	.parents:
@@ -57,6 +64,10 @@ code, pre:
 	&[data-type="document"] .type:before:
 		content: "🕮"
 		font-style: normal
+	&[data-type="file"] .type:before:
+		content: "🗋"
+		font-style: normal
+		font-weight: bold
 	&[data-type="function"] .type:before:
 		content: "λ"
 	&[data-type="module"] .type:before:
@@ -96,7 +107,7 @@ code, pre:
 .container:
 	color: #404040
 	box-sizing: border-box
-	border-left: 1px solid #f0f0f0
+	border-left: 1px solid $COLOR_BD
 	flex-grow: 0
 	flex-shrink: 0
 	flex-basis: 100% / 3
@@ -111,8 +122,8 @@ code, pre:
 		padding-top: 10pt
 		margin-bottom: 5pt
 		font-weight: bold
-		border-bottom: 1px solid #f0f0f0
-		color: #505050
+		border-bottom: 1px solid $COLOR_BD
+		opacity: 0.85
 		font-weight: bold
 		margin-top: 1em
 		.name:
@@ -142,14 +153,14 @@ code, pre:
 	box-sizing: border-box
 	flex-basis: 3 * $CONTAINER_WIDTH + 3px
 	background: white
-	border-right: 1px solid #f0f0f0
+	border-right: 1px solid $COLOR_BD
 	display: flex
 	overflow-x: auto
 
 #description:
 	flex-grow: 5
 	min-width: 400px
-	padding: 10pt
+	padding: 1pad
 	.overview:
 		padding-left: 10pt
 		h1:
@@ -173,9 +184,9 @@ code, pre:
 		margin-bottom: -1px
 		position: relative
 		margin-top: 1.25em
-		padding: 20pt
-		margin-left: -10pt
-		margin-right: -10pt
+		padding: 2pad
+		margin-left: -1pad
+		margin-right: -1pad
 		background: #FBF8E1
 		font-size: 150%
 		line-height: 1.25em
@@ -198,12 +209,12 @@ code, pre:
 	.documentation :
 		font-size: 13px
 		line-height: 1.5em
-		border-top: 1px solid #f0f0f0
-		border-bottom: 1px solid #f0f0f0
+		border-top: 1px solid $COLOR_BD
+		border-bottom: 1px solid $COLOR_BD
 		background: white
-		margin-left: -10pt
-		margin-right: -10pt
-		padding: 20pt
+		margin-left: -1pad
+		margin-right: -1pad
+		padding: 2pad
 		color: #808080
 
 		p:
@@ -211,20 +222,69 @@ code, pre:
 
 		ul:
 			margin-left: 0em
-			padding-left: 10pt
+			padding-left: 1pad
 			list-style-type: circle
 
 		li:
 			padding-left: 5pt
 
 
+	.children:
+		border-bottom: 1px solid $COLOR_BD
+		background: white
+		margin-left: -1pad
+		margin-right: -1pad
+		padding: 2pad
+		.title:
+			display: none
+		.slot:
+			border-bottom: 1px solid $COLOR_BD_05
+			padding: 1pad
+			font-size: 120%
+			.type:
+				display: none
+			&:before:
+				content: attr(data-type)
+				font-size: 80%
+				border: 1px solid $COLOR_ACCENT_05
+				color: $COLOR_ACCENT
+				border-radius: 4px
+				font-weight: bold
+				padding: 2px
+				padding-left: 1pad
+				padding-right: 1pad
+				float: right
+				margin-top:  8px
+				margin-left: 1pad
+			.name, .docstring:
+				display: inline-block
+		.docstring:
+			opacity: 0.5
+			> div:
+				display: none
+			> div:first-child
+				display: inline-block
+			&:before:
+				display: inline-block
+				content:"―"
+				padding-left: 1pad
+				padding-right: 1pad
+		.group:last-child .slot:last-child:
+			border-bottom: 0px solid transparent
 	.relations:
-		padding: 10pt
-		// column-width: 240px
-		// column-gap: 10pt
+		padding: 1pad
+		column-width: 240px
+		column-gap:   1pad
+		.relation:
+			break-inside: avoid-column
+			padding: 1pad
+			padding-top: 0.5pad
+			padding-bottom: 0.5pad
 		h2:
-			font-size: 100%
-			margin-bottom: 0em
+			font-size: 90%
+			text-transform: uppercase
+			opacity: 0.5
+			letter-spacing: 1px
 		ul:
 			padding-left: 0pt
 		ul, li:
@@ -235,8 +295,8 @@ code, pre:
 
 #about:
 	position: fixed
-	bottom: 5pt
-	right: 10pt
+	bottom: 0.5pad
+	right: 1pad
 	opacity: 0.5
 	text-align: right
 

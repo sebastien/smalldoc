@@ -12,6 +12,7 @@
 	containers : 3
 	data       : "api.json"
 }
+
 @shared STATE   = {
 	active  : []
 	symbols : {}
@@ -28,6 +29,16 @@
 	"method"
 	"function"
 	"value"
+]
+
+@shared GROUPS_CHILDREN = [
+	"class attribute"
+	"attribute"
+	"value"
+	"class method"
+	"class constructor"
+	"method"
+	"function"
 ]
 
 @function loadCSS fonts=FONTS
@@ -130,15 +141,27 @@
 	let d = html div ({_:"documentation"})
 	d innerHTML = element documentation or "<div class='undocumented'>Undocumented</div>"
 	node appendChild (d)
+	# Slots
+	if element children
+		let c = _getGroups (element children, GROUPS_CHILDREN) map {renderGroup (_[1], _[0], "children")}
+		node appendChild (html div (
+			{_:"children"}
+			c
+		))
+	end
 	# Relations
 	let n = renderRelations (element)
-	console log (n)
 	node appendChild (n)
 @end
 
-@function renderName:Element name:String, type:String=Undefined
+@function renderName:Element name:String, type:String=Undefined, sep=".", suffix=None
 | Renders a symbol name.
-	let names  = (name or "__root__") split "."
+	if typeof (name) == "object"
+		# In this case, we have a symbol
+		type = type or _getGroup (name)
+		name = name name
+	end
+	let names  = (name or "__root__") split (sep)
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
 	let n      = names pop ()
 	return html div (
@@ -149,6 +172,7 @@
 			names map {html span ({_:"parent"}, _)}
 		)
 		html span ({_:"symbol"}, n)
+		suffix
 	)
 @end
 
@@ -169,29 +193,45 @@
 	))
 @end
 
-@function renderGroup slots, name
+@function renderGroup slots, name, mode=None
 	return html div (
 		{_:"group"}
 		html div ({_:"title",data-key:name split " " join "-" toLowerCase()}, name)
-		renderSlots (slots)
+		renderSlots (slots, mode)
 	)
 @end
 
-@function renderSlots slots
+@function renderSlots slots, mode=None
 	return html ul (
 		{_:"slots"}
 		slots map {s|
 			var a = _[1] children and renderContainer (_[1], _[1] id or _[0])
 			var b = {_|STATE symbols [s[1] id or s[0]] = s[1]}()
+			let t = _getGroup (s[1])
 			html div (
-				{_:"slot" + (if s[1] documentation -> "" | " undocumented"), data-type:s[1] type, id:"slot:" + (s[1] id or s[0])}
+				{_:"slot" + (if s[1] documentation -> "" | " undocumented"), data-type:t, id:"slot:" + (s[1] id or s[0])}
 				html a (
 					{href:"#" + s[1] id or s[0]}
-					renderName (s[0], s[1] type)
+					renderName (s[0], t)
+					_renderSlotMode (s, mode)
 				)
 			)
 		}
 	)
+@end
+
+@function _renderSlotMode slot, mode
+	var name  = slot[0]
+	var value = slot[1]
+	if mode == "children"
+		var res = []
+		let d = html div {_:"docstring"}
+		d innerHTML = value documentation  or "<div>Undocumented</div>"
+		res push (d)
+		return res
+	else
+		return None
+	end
 @end
 
 @function renderRelations element
@@ -206,43 +246,46 @@
 	return html div (
 		{_:"relations"}
 		keys sort () map {
-			html div (
+			# This effectively strips out the empty
+			# relations.
+			let r = d[_] reduce ({r,e|
+				let v = renderRelation(e)
+				if v -> r push (html li (v))
+				return r
+			}, [])
+			r length > 0 and html div (
 				{_:"relation",data-type:_}
 				html h2 (_)
-				html ul (
-					d[_] map {
-						html li (renderRelation(_))
-					}
-				)
-			)
+				html ul (r)
+			) or None
 		}
 	)
 @end
 
 @function renderRelation r
 	let name = r[0]
-	if name == "defined"
+	if name == "defined in"
 		let s = STATE symbols [r[1]]
 		return html span (
 			{_:"defined"}
-			html span (
-				{_:"name", data-type:_getGroup(s)}
-				html a ({href:"#" + r[1]}, r[1])
+			html a (
+				{href:"#" + s id}
+				renderName(s)
 			)
 		)
-	elif name == "defines"
-		let k = r[1]
-		let v = STATE symbols [r[2]]
+	elif name == "source"
+		let path   = r[1]
+		let offset = r[2]
 		return html span (
-			{_:"defines"}
-			html span (
-				{_:"name", data-type:_getGroup(s)}
-				k
-				"="
-				html a ({href:"#" + r[1]}, r[1])
+			{_:"source file"}
+			html a (
+				{href:path + "#" + offset[0] + "-" + offset[1], target:"source"}
+				renderName(path,"file", "/", html span ({_:"offset"}
+					html span ({_:"start"}, offset[0])
+					html span ({_:"end"},   offset[1])
+				))
 			)
 		)
-
 	else
 		return None
 	end
@@ -255,7 +298,12 @@
 # -----------------------------------------------------------------------------
 
 @function _getGroup element
-	return GROUPS find {(element tags or []) indexOf (_) > -1} or element type or "value"
+	if element
+		return GROUPS find {(element tags or []) indexOf (_) > -1} or element type or "value"
+	else
+		console warn (__scope__ + ": Element is not defined:", element)
+		return None
+	end
 @end
 
 @function _getGroups elements:List, sort=True

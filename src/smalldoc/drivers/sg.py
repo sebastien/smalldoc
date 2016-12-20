@@ -96,15 +96,19 @@ class SugarDriver(Driver):
 
 	def on( self, model ):
 		if isinstance(model, IFunction) or isinstance(model, IClassMethod) or isinstance(model, IMethod):
-			return self.onFunction(model)
+			res = self.onFunction(model)
 		elif isinstance(model, IClass):
-			return self.onClass(model)
+			res = self.onClass(model)
 		elif isinstance(model, IAttribute):
-			return self.onValue(model)
+			res = self.onValue(model)
 		elif isinstance(model, IImportOperation):
 			pass
 		else:
 			raise Exception("Type not supported: {0}".format(model))
+		if res and model and model.sourceLocation:
+			s,e,p = model.sourceLocation
+			res.addRelation(REL_SOURCE, p, [s,e])
+		return res
 
 	def _getID( self, model ):
 		"""Generates the fully qualified name for the given LambdaFactory model

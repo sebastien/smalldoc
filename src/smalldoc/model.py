@@ -33,7 +33,8 @@ MOD_INHERITED       = "inherited"
 REL_EXTENDS         = "extends"
 REL_ARGUMENTS       = "arguments"
 REL_SLOT            = "defines"
-REL_DEFINED         = "defined"
+REL_DEFINED         = "defined in"
+REL_SOURCE          = "source"
 
 KEYS_ORDER = (
 	KEY_PARENT,
