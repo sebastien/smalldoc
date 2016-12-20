@@ -6,11 +6,14 @@
 # License           : BSD License
 # -----------------------------------------------------------------------------
 # Creation date     : 2016-12-09
-# Last modification : 2016-12-15
+# Last modification : 2016-12-21
 # -----------------------------------------------------------------------------
 
 import os, json
 
+KEY_DOCUMENT        = "document"
+KEY_FILE            = "file"
+KEY_SECTION         = "section"
 KEY_MODULE          = "module"
 KEY_CLASS           = "class"
 KEY_FUNCTION        = "function"
@@ -20,7 +23,6 @@ KEY_CLASS_METHOD    = "class method"
 KEY_CLASS_ATTRIBUTE = "class attribute"
 KEY_ATTRIBUTE       = "attribute"
 KEY_VALUE           = "value"
-KEY_PARENT          = "parent"
 KEY_STRING          = "string"
 KEY_NUMBER          = "number"
 KEY_MAP             = "map"
@@ -35,19 +37,9 @@ REL_ARGUMENTS       = "arguments"
 REL_SLOT            = "defines"
 REL_DEFINED         = "defined in"
 REL_SOURCE          = "source"
-
-KEYS_ORDER = (
-	KEY_PARENT,
-	KEY_MODULE,
-	KEY_CLASS,
-	KEY_CONSTRUCTOR,
-	KEY_CLASS_ATTRIBUTE,
-	KEY_CLASS_METHOD,
-	KEY_ATTRIBUTE,
-	KEY_METHOD,
-	KEY_FUNCTION,
-	KEY_VALUE
-)
+REL_PARENT          = "parent"
+REL_NEXT            = "next"
+REL_PREVIOUS        = "previous"
 
 SPECIAL_ATTRIBUTES = {
 	"__init__"    : "constructor",

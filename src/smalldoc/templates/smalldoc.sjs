@@ -1,3 +1,12 @@
+# -----------------------------------------------------------------------------
+# Project           : smalldoc
+# -----------------------------------------------------------------------------
+# Author            : Sébastien Pierre                   <github.com/sebastien>
+# License           : BSD License
+# -----------------------------------------------------------------------------
+# Creation date     : 2016-12-15
+# Last modification : 2016-12-21
+# -----------------------------------------------------------------------------
 @module smalldoc
 | Renders `smalldoc` JSON data into a Smalltalk-like documentation browser. The resulting
 | document will ony work on modern browsers.
@@ -6,6 +15,7 @@
 | minimize dependencies ― the drawback of this approach is that ther can only
 | be one instance per document.
 
+@shared LICENSE = "http://ffctn.com/doc/licenses/bsd"
 @shared FONTS   = "Fira+Mono|Fira+Sans"
 @shared DATA    = None
 @shared OPTIONS = {
@@ -19,6 +29,8 @@
 }
 
 @shared GROUPS = [
+	"document"
+	"section"
 	"parent"
 	"module"
 	"class"
@@ -48,10 +60,13 @@
 @end
 
 @function load path=OPTIONS data
+| Loads the data file at the given path/URL.
 	fetch (path) then {_ json () then (setup)}
 @end
 
 @function setup data=DATA
+| Initialize/setup the DOM to be able to render smalldoc data.
+	if STATE initialized -> return False
 	DATA = data
 	let n = ensureNode ("smalldoc", document body)
 	ensureNode ("containers",  n)
@@ -61,6 +76,7 @@
 	render (data)
 	window addEventListener ("hashchange", onHashChange)
 	onHashChange ()
+	STATE initialized = True
 @end
 
 @function ensureNode:Node id:String, parent:Node, callback:Function=Undefined
@@ -78,25 +94,30 @@
 	return node
 @end
 
-@function render data
-	renderContainer (data, "Smalldoc", "document")
+@function render data, title=None
+| Renders the given root data. This
+	renderContainer (data, title or data title or "Smalldoc", "document")
 @end
 
 @function show symbol, containers=OPTIONS containers
-	_clearContainers ()
-	_showContainer "__root__"
-	let n = (symbol or "") split "."
-	n reduce ({r,e|_showContainer (if r -> r + "." + e | e)}, "")
-	# Ensures that there is a least M containers
-	let c    = n length
-	var node = document getElementById "containers"
-	while node childNodes length < containers
-		var i = (containers - node childNodes length)
-		node appendChild (ensureNode ("container-" + i, node, {_ classList add "container"}))
-	end
-	# We retrieve the symbol with the given name
+| Shows the symbol with the given name, ensuring that there is at least
+| `containers` displayed ― filler containers will be used if no parent
+| container is available.
 	var s = STATE symbols [symbol]
-	if s
+	if s or (not STATE previous)
+		STATE previous = s
+		_clearContainers ()
+		_showContainer "__root__"
+		let n = (symbol or "") split "."
+		n reduce ({r,e|_showContainer (if r -> r + "." + e | e)}, "")
+		# Ensures that there is a least M containers
+		let c    = n length
+		var node = document getElementById "containers"
+		while node childNodes length < containers
+			var i = (containers - node childNodes length)
+			node appendChild (ensureNode ("container-" + i, node, {_ classList add "container"}))
+		end
+		# We retrieve the symbol with the given name
 		renderDescription (s)
 	else
 		console warn ("smalldoc.show: Cannot find symbol `" + symbol + "`")
@@ -119,47 +140,51 @@
 	while node firstChild
 		node removeChild (node firstChild)
 	end
-	# Description
-	let parents = element id split "." ; let name = parents pop ()
-	node appendChild (html div (
-		{_:"overview"}
-		html h1 (
-			html span ({_:"type"}, _getGroup (element))
-			html span ({_:"parents"}, parents map {
-				html span ({_:"parent name"}, _)
-			})
-			html span ({_:"name"}, element name or name)
-		)
-	))
-	# Representation
-	if element representation
-		let p = html pre ()
-		p innerHTML = element representation
-		node appendChild (html div ({_:"representation"}, p))
-	end
-	# Documentation
-	let d = html div ({_:"documentation"})
-	d innerHTML = element documentation or "<div class='undocumented'>Undocumented</div>"
-	node appendChild (d)
-	# Slots
-	if element children
-		let c = _getGroups (element children, GROUPS_CHILDREN) map {renderGroup (_[1], _[0], "children")}
+	if element
+		# Description
+		let parents = element id split "." ; let name = parents pop ()
+		node setAttribute ("data-type", element type)
+		node setAttribute ("data-id",   element id)
 		node appendChild (html div (
-			{_:"children"}
-			c
+			{_:"overview"}
+			html h1 (
+				renderName (element)
+			)
 		))
+		# Representation
+		if element representation
+			let p = html pre ()
+			p innerHTML = element representation
+			node appendChild (html div ({_:"representation"}, p))
+		end
+		# Documentation
+		let d = html div ({_:"documentation docstring", data-type:element type})
+		d innerHTML = element documentation or "<div class='undocumented'>Undocumented</div>"
+		node appendChild (d)
+		# Slots
+		if element children
+			let c = _getGroups (element children, GROUPS_CHILDREN) map {renderGroup (_[1], _[0], "children")}
+			node appendChild (html div (
+				{_:"children", data-type: element type}
+				c
+			))
+		end
+		# Relations
+		let n = renderRelations (element)
+		node appendChild (n)
+	else
+		console warn (__scope__ + ": no element was given")
 	end
-	# Relations
-	let n = renderRelations (element)
-	node appendChild (n)
 @end
 
 @function renderName:Element name:String, type:String=Undefined, sep=".", suffix=None
 | Renders a symbol name.
+	var is_defined = STATE symbols [name]
 	if typeof (name) == "object"
 		# In this case, we have a symbol
 		type = type or _getGroup (name)
-		name = name name
+		name = name id
+		is_defined = True
 	end
 	let names  = (name or "__root__") split (sep)
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
@@ -169,9 +194,15 @@
 		html span {_:"type"}
 		html span (
 			{_:"parents", data-count:"" + parent length}
-			names map {html span ({_:"parent"}, _)}
+			names reduce ({r,e|
+				r prefix push (e)
+				let n = r prefix join (sep)
+				let h = "#" + n
+				r children push ((STATE symbols[n] and html a or html span)({_:"parent", href:h}, e))
+				return r
+			}, {prefix:[],children:[]}) children
 		)
-		html span ({_:"symbol"}, n)
+		(is_defined and html a or html span)({_:"symbol", href:"#" + name}, n)
 		suffix
 	)
 @end
@@ -180,14 +211,12 @@
 	let names  = (data id or data name or "__root__") split "."
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
 	type       = type or data type or (if name == "__root__" -> "root" | "generic")
+	console log ("RENDER", data, name, names, parent)
 	return _addContainer (html div (
 		{_:"container",data-type:type, id:data id or data name or "__root__"}
 		html div (
 			{_:"title"}
-			html a (
-				{href:"#" + parent}
-				renderName (name, type)
-			)
+			renderName (name, type)
 		)
 		_getGroups (data children) map {renderGroup (_[1], _[0])}
 	))
@@ -205,8 +234,8 @@
 	return html ul (
 		{_:"slots"}
 		slots map {s|
-			var a = _[1] children and renderContainer (_[1], _[1] id or _[0])
-			var b = {_|STATE symbols [s[1] id or s[0]] = s[1]}()
+			var a = {_|STATE symbols [s[1] id or s[0]] = s[1]}()
+			var b = _[1] children and renderContainer (_[1], _[1] id or _[0])
 			let t = _getGroup (s[1])
 			html div (
 				{_:"slot" + (if s[1] documentation -> "" | " undocumented"), data-type:t, id:"slot:" + (s[1] id or s[0])}
@@ -227,6 +256,7 @@
 		var res = []
 		let d = html div {_:"docstring"}
 		d innerHTML = value documentation  or "<div>Undocumented</div>"
+		res push (html div ({_:"type"}, _getGroup(value)))
 		res push (d)
 		return res
 	else
@@ -268,6 +298,15 @@
 		let s = STATE symbols [r[1]]
 		return html span (
 			{_:"defined"}
+			html a (
+				{href:"#" + s id}
+				renderName(s)
+			)
+		)
+	elif name == "next" or name == "previous"
+		let s = STATE symbols [r[1]]
+		return html span (
+			{_:name}
 			html a (
 				{href:"#" + s id}
 				renderName(s)
@@ -355,9 +394,9 @@
 	if node
 		document getElementById "containers" appendChild (node)
 	else
-		console warn ("smalldoc: cannot find container `" + name + "`")
+		console warn (__scope__ + ": cannot find container `" + name + "`")
 	end
 	return name
 @end
 
-# EOF
+# EOF - vim: ts=4 sw=4 noet

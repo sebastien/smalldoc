@@ -7,6 +7,9 @@ COLOR_BG        = #FCFCF6
 COLOR_BD        = #00000015
 COLOR_BD_05     = #00000008
 
+FONT_MONO = "Fira Mono", monospace
+FONT_SANS = "Fira Sans", "Lucida Grande", "Lucida", Helvetica, sans-serif
+
 COLOR_SELECTABLE_HOVER_BG = $COLOR_ACCENT_05
 COLOR_SELECTED            = $COLOR_ACCENT
 COLOR_SELECTED_BD         = $COLOR_ACCENT
@@ -18,7 +21,7 @@ CONTAINER_WIDTH = 180px
 html, body:
 	background : $COLOR_BG
 	color: #000000
-	font: 8pt "Fira Sans", "Lucida Grande", "Lucida", Helvetica, sans-serif
+	font: 8pt $FONT_SANS
 	line-height: 14pt
 	padding: 0
 	margin: 0
@@ -52,6 +55,8 @@ code, pre:
 			content:"."
 			&:last-child:
 				display:none
+	&[data-type="file"] .parents .parent:after:
+		content: "/"
 	.type:
 		color: #D0C0C0
 		font-style: italic
@@ -61,6 +66,9 @@ code, pre:
 		content: "•"
 	.symbol:
 		flex-grow: 100
+	&[data-type="root"] .type:before:
+		content: "🕮"
+		font-style: normal
 	&[data-type="document"] .type:before:
 		content: "🕮"
 		font-style: normal
@@ -161,22 +169,17 @@ code, pre:
 	flex-grow: 5
 	min-width: 400px
 	padding: 1pad
+	overflow-y: auto
 	.overview:
 		padding-left: 10pt
 		h1:
 			display: flex
+			align-items: stretch
+			> .name:
+				width: 100%
 		.type:
 			padding-right: 5px
 			opacity: 0.5
-		.parents:
-			.parent:
-				opacity: 0.5
-				display: none
-				&:after:
-					content: "."
-				&:last-child:
-					display: inline
-					opacity: 1.0
 
 	.representation:
 		border-top: 1px solid $COLOR_ACCENT_05
@@ -190,6 +193,11 @@ code, pre:
 		background: #FBF8E1
 		font-size: 150%
 		line-height: 1.25em
+		pre:
+			display: block
+			margin: -2pad
+			overflow-x: auto
+			padding: 2pad
 		.name:
 			display: inline
 		.arguments:
@@ -207,8 +215,8 @@ code, pre:
 					content:""
 
 	.documentation :
-		font-size: 13px
-		line-height: 1.5em
+		font-size: 125%
+		line-height: 1.75em
 		border-top: 1px solid $COLOR_BD
 		border-bottom: 1px solid $COLOR_BD
 		background: white
@@ -216,14 +224,28 @@ code, pre:
 		margin-right: -1pad
 		padding: 2pad
 		color: #808080
+		position: relative
+		// NOTE: This is more a hack than anything. Tables
+		// will make the flex container grow too much and
+		// shrink the #containers to 0.
+		table:
+			max-width: 40em
+			overflow-x: auto
+		table.meta:
+			display: none
 
+
+	.docstring:
 		p:
 			max-width: 45em
-
+		li:
+			max-width: 45em
 		ul:
-			margin-left: 0em
+			margin-left:  1pad
 			padding-left: 1pad
 			list-style-type: circle
+		ul:
+			margin-top: -1pad
 
 		li:
 			padding-left: 5pt
@@ -236,15 +258,23 @@ code, pre:
 		margin-right: -1pad
 		padding: 2pad
 		.title:
-			display: none
+			font-weight: bold
+			text-transform: capitalize
+			padding-left: 5px
+			margin-top: 2pad
+			padding-bottom: 0.5pad
+			border-bottom: 1px solid $COLOR_BD
+			&:after:
+				content: "s"
 		.slot:
-			border-bottom: 1px solid $COLOR_BD_05
 			padding: 1pad
 			font-size: 120%
+			.name:
+				float: left
+				font-size: 120%
+				.type:
+					display: none
 			.type:
-				display: none
-			&:before:
-				content: attr(data-type)
 				font-size: 80%
 				border: 1px solid $COLOR_ACCENT_05
 				color: $COLOR_ACCENT
@@ -254,27 +284,25 @@ code, pre:
 				padding-left: 1pad
 				padding-right: 1pad
 				float: right
-				margin-top:  8px
 				margin-left: 1pad
-			.name, .docstring:
-				display: inline-block
+			.docstring:
+				clear: both
+				> *:
+					display: none
+					&:first-child:
+						display: block
+						&:first-letter:
+							text-transform: uppercase
+						> *:
+							display: none
+							&:first-child:
+								display: block
 		.docstring:
 			opacity: 0.5
-			> div:
-				display: none
-			> div:first-child
-				display: inline-block
-			&:before:
-				display: inline-block
-				content:"―"
-				padding-left: 1pad
-				padding-right: 1pad
-		.group:last-child .slot:last-child:
-			border-bottom: 0px solid transparent
 	.relations:
 		padding: 1pad
-		column-width: 240px
-		column-gap:   1pad
+		// column-width: 240px
+		// column-gap:   1pad
 		.relation:
 			break-inside: avoid-column
 			padding: 1pad
@@ -289,6 +317,16 @@ code, pre:
 			padding-left: 0pt
 		ul, li:
 			list-style-type: none
+
+	&[data-type="document"], &[data-type="section"]:
+		> .documentation:
+			padding: 5pad
+			> .title:
+				margin-bottom: 3pad
+				border-bottom: 1px solid $COLOR_BD
+				padding-bottom: 1pad
+		> .children:
+			display: none
 		
 #hidden:
 	display: none
@@ -296,8 +334,9 @@ code, pre:
 #about:
 	position: fixed
 	bottom: 0.5pad
-	right: 1pad
+	left: 1pad
 	opacity: 0.5
+	background-color: #FFFFFFA0
 	text-align: right
 
 REMOVED:

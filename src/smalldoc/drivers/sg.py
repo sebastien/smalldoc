@@ -6,7 +6,7 @@
 # License           : BSD License
 # -----------------------------------------------------------------------------
 # Creation date     : 2016-12-09
-# Last modification : 2016-12-09
+# Last modification : 2016-12-20
 # -----------------------------------------------------------------------------
 
 from __future__ import print_function
@@ -132,7 +132,7 @@ class SugarDriver(Driver):
 	def _getRepresentation( self, model ):
 		if model and model.sourceLocation:
 			s,e,p = model.sourceLocation
-			return self.unindent(self.readSource(p,s,e))
+			return self.unindent(self.readSource(p,s,e)) if p!=-1 else None
 		else:
 			return None
 
@@ -149,13 +149,5 @@ class SugarDriver(Driver):
 		if   isinstance(model, IDict):           res.append(KEY_MAP)
 		if   isinstance(model, IReference):      res.append(KEY_REFERENCE)
 		return res
-
-
-if __name__ == "__main__":
-	import sys, json
-	import smalldoc.model
-	d = SugarDriver(smalldoc.model.Documenter())
-	d.parsePath(sys.argv[1])
-	print (json.dumps(d.toJSON()))
 
 # EOF - vim: ts=4 sw=4 noet

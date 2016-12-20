@@ -26,6 +26,14 @@ class Driver(object):
 		self.scopes     = []
 		self.path       = path
 		self._sources   = {}
+		self.init()
+
+	def init( self ):
+		pass
+
+	def parse( self, name ):
+		"""Parses the given path or module name."""
+		raise NotImplementedError
 
 	def readSource( self, path, start=None, end=None):
 		text = self._sources.get(path)
