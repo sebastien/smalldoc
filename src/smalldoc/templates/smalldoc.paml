@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html
+	<head
+		<meta(charset="utf8")
+		#<link(href="https://fonts.googleapis.com/css?family=Fira+Mono|Fira+Sans",rel="stylesheet")
+		<link(href=smalldoc.pcss,rel=stylesheet)
+	<body
+		<div#smalldoc
+		<script(src=html-5.0.9.js)
+		<script(src=smalldoc.sjs)
+		<script:smalldoc.load("/api.json")
+# EOF
