@@ -1,3 +1,5 @@
+@@import url('https://fonts.googleapis.com/css?family=Eczar|Fira+Mono|Fira+Sans')
+
 COLOR_ACCENT    = #EAE08C
 COLOR_ACCENT_05 = #EAE08C80
 COLOR_ACCENT_02 = #EAE08C40
@@ -7,8 +9,9 @@ COLOR_BG        = #FCFCF6
 COLOR_BD        = #00000015
 COLOR_BD_05     = #00000008
 
-FONT_MONO = "Fira Mono", monospace
-FONT_SANS = "Fira Sans", "Lucida Grande", "Lucida", Helvetica, sans-serif
+FONT_MONO  = "Fira Mono", monospace
+FONT_SANS  = "Fira Sans", "Lucida Grande", "Lucida", Helvetica, sans-serif
+FONT_SERIF = "Eczar", serif
 
 COLOR_SELECTABLE_HOVER_BG = $COLOR_ACCENT_05
 COLOR_SELECTED            = $COLOR_ACCENT
@@ -51,6 +54,9 @@ code, pre:
 		text-overflow: ellipsis
 		overflow: hidden
 		opacity: 0.5
+		a[href]:hover:
+			text-decoration: underline
+			cursor: pointer
 		.parent:after:
 			content:"."
 			&:last-child:
@@ -321,6 +327,10 @@ code, pre:
 	&[data-type="document"], &[data-type="section"]:
 		> .documentation:
 			padding: 5pad
+			p, ul:
+				font-family: $FONT_SERIF
+				font-size: 16px
+				line-height: 1.45em
 			> .title:
 				margin-bottom: 3pad
 				border-bottom: 1px solid $COLOR_BD

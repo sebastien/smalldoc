@@ -39,7 +39,7 @@ class TextoProcessor(Processor):
 			tags          = ["texto"]
 		)
 		self.context.append(e)
-		html  = Processor.on_Document(self, element)
+		html = super(TextoProcessor, self).on_Document( element)
 		e.documentation = html
 		self._setLocation(e, element)
 		self.context.pop()
@@ -59,7 +59,7 @@ class TextoProcessor(Processor):
 		)
 		self.context[-1].setSlot(name, e)
 		self.context.append(e)
-		html = Processor.on_Section(self, element)
+		html = super(TextoProcessor, self).on_Section( element)
 		e.documentation = html
 		self._setLocation(e, element)
 		self.context.pop()

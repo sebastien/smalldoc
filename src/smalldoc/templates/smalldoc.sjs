@@ -16,7 +16,6 @@
 | be one instance per document.
 
 @shared LICENSE = "http://ffctn.com/doc/licenses/bsd"
-@shared FONTS   = "Fira+Mono|Fira+Sans"
 @shared DATA    = None
 @shared OPTIONS = {
 	containers : 3
@@ -53,10 +52,14 @@
 	"function"
 ]
 
-@function loadCSS fonts=FONTS
-	let node = html link {href:"https://fonts.googleapis.com/css?family=" + fonts,rel:"stylesheet"}
-	document head appendChild (node)
-	return node
+@function loadCSS url=None
+	if url
+		let node = html link {href:url + fonts,rel:"stylesheet"}
+		document head appendChild (node)
+		return node
+	else
+		return None
+	end
 @end
 
 @function load path=OPTIONS data
