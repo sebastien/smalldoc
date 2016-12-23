@@ -52,7 +52,7 @@ class TextoProcessor(Processor):
 	def on_Section( self, element ):
 		name = self.text(self.first(element, "Heading"))
 		e     = self.driver.documenter.createElement(
-			id            = self.driver._documentName + "." + element.getAttribute("id"),
+			id            = self.context[-1].id + "." + element.getAttribute("id"),
 			type          = KEY_SECTION,
 			name          = name,
 			source        = self.driver._documentPath,

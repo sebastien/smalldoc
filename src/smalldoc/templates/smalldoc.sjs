@@ -20,6 +20,11 @@
 @shared OPTIONS = {
 	containers : 3
 	data       : "api.json"
+	sort       : {
+		section  : False
+		document : False
+		module   : False
+	}
 }
 
 @shared STATE   = {
@@ -214,26 +219,26 @@
 	let names  = (data id or data name or "__root__") split "."
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
 	type       = type or data type or (if name == "__root__" -> "root" | "generic")
-	console log ("RENDER", data, name, names, parent)
+	console log ("RENDER", data, name, names, parent, "TYPE", type)
 	return _addContainer (html div (
 		{_:"container",data-type:type, id:data id or data name or "__root__"}
 		html div (
 			{_:"title"}
 			renderName (name, type)
 		)
-		_getGroups (data children) map {renderGroup (_[1], _[0])}
+		_getGroups (data children, OPTIONS sort [type]) map {renderGroup (_[1], _[0])}
 	))
 @end
 
-@function renderGroup slots, name, mode=None
+@function renderGroup slots, name, options=None
 	return html div (
 		{_:"group"}
 		html div ({_:"title",data-key:name split " " join "-" toLowerCase()}, name)
-		renderSlots (slots, mode)
+		renderSlots (slots, options)
 	)
 @end
 
-@function renderSlots slots, mode=None
+@function renderSlots slots, options=None
 	return html ul (
 		{_:"slots"}
 		slots map {s|
@@ -245,17 +250,17 @@
 				html a (
 					{href:"#" + s[1] id or s[0]}
 					renderName (s[0], t)
-					_renderSlotMode (s, mode)
+					_renderSlot (s, options)
 				)
 			)
 		}
 	)
 @end
 
-@function _renderSlotMode slot, mode
+@function _renderSlot slot, options=None
 	var name  = slot[0]
 	var value = slot[1]
-	if mode == "children"
+	if options == "children"
 		var res = []
 		let d = html div {_:"docstring"}
 		d innerHTML = value documentation  or "<div>Undocumented</div>"
@@ -358,7 +363,8 @@
 	let r = GROUPS reduce ({r,e|
 		let l = g[e]
 		if typeof (l) == "object"
-			if sort -> l sort {a,b|return a[0] localeCompare (b[0])}
+			if sort is True               -> l sort {a,b|return a[0] localeCompare (b[0])}
+			if typeof(sort) is "function" -> l = sort (l)
 			r push [e, l]
 		end
 		r

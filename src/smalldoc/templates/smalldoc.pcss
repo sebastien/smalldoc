@@ -52,6 +52,7 @@ code, pre:
 	.parents:
 		flex-grow: 0
 		text-overflow: ellipsis
+		white-space: nowrap
 		overflow: hidden
 		opacity: 0.5
 		a[href]:hover:
@@ -72,6 +73,10 @@ code, pre:
 		content: "•"
 	.symbol:
 		flex-grow: 100
+		white-space: nowrap
+		text-overflow: ellipsis
+		white-space: nowrap
+		overflow: hidden
 	&[data-type="root"] .type:before:
 		content: "🕮"
 		font-style: normal
@@ -321,16 +326,31 @@ code, pre:
 			letter-spacing: 1px
 		ul:
 			padding-left: 0pt
+			margin: 0em
 		ul, li:
 			list-style-type: none
 
 	&[data-type="document"], &[data-type="section"]:
 		> .documentation:
 			padding: 5pad
+			h1, h2, h3, h4, h5:
+				margin-top: 3pad
+				margin-bottom: 2pad
 			p, ul:
 				font-family: $FONT_SERIF
 				font-size: 16px
 				line-height: 1.45em
+			pre:
+				background: #FBF8E1
+				padding: 2pad
+				max-width:100%
+				position: relative
+				box-sizing: border-box
+				overflow: auto
+
+			.section:
+				margin-top:    5pad
+				margin-bottom: 5pad
 			> .title:
 				margin-bottom: 3pad
 				border-bottom: 1px solid $COLOR_BD
