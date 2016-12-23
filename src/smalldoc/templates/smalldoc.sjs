@@ -219,7 +219,6 @@
 	let names  = (data id or data name or "__root__") split "."
 	let parent = if names length > 1 -> names[names length - 2] | "__root__"
 	type       = type or data type or (if name == "__root__" -> "root" | "generic")
-	console log ("RENDER", data, name, names, parent, "TYPE", type)
 	return _addContainer (html div (
 		{_:"container",data-type:type, id:data id or data name or "__root__"}
 		html div (
@@ -306,19 +305,19 @@
 		let s = STATE symbols [r[1]]
 		return html span (
 			{_:"defined"}
-			html a (
+			s and html a (
 				{href:"#" + s id}
 				renderName(s)
-			)
+			) or r[1]
 		)
-	elif name == "next" or name == "previous"
+	elif name == "next" or name == "previous" or name == "parent"
 		let s = STATE symbols [r[1]]
 		return html span (
 			{_:name}
-			html a (
+			s and html a (
 				{href:"#" + s id}
 				renderName(s)
-			)
+			) or r[1]
 		)
 	elif name == "source"
 		let path   = r[1]

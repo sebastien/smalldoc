@@ -75,9 +75,10 @@ class SugarDriver(Driver):
 			tags=self._getTags(model),
 			documentation=self._getDocumentation(model),
 		)
+		for r in model.getParentClassesRefs():
+			e.addRelation(REL_PARENT, r.getName())
 		# TODO: Add parent relations
 		# TODO: Add inherited slots
-		# TODO: Add source offsets
 		return self._setSlots(model, e)
 
 	def onValue( self, model ):
