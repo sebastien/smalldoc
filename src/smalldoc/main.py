@@ -120,7 +120,7 @@ def run( args, stdout=sys.stdout, interactive=True ):
 			# root module, so we need to traverse it.
 			path          = symbol_name.split(".")
 			driver_class  = functools.reduce(lambda a,b:getattr(a, b), path[1:], __import__(module_name))
-			driver        = driver_class(documenter, options.path)
+			driver        = driver_class(documenter, options.path, logger=logging)
 			drivers[name] = driver
 		return drivers[name]
 	# And now document the module

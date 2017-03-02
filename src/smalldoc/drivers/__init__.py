@@ -21,12 +21,22 @@ RE_INDENT = re.compile("^([\t ]*)")
 
 class Driver(object):
 
-	def __init__( self, documenter, path=() ):
+	def __init__( self, documenter, path=(), logger=None ):
 		self.documenter = documenter
 		self.scopes     = []
 		self.path       = path
 		self._sources   = {}
+		self.logger     = logger
 		self.init()
+
+	def info( self, *message ):
+		if self.logger: self.logger.info(*message)
+
+	def warn( self, *message ):
+		if self.logger: self.logger.warn(*message)
+
+	def error( self, *message ):
+		if self.logger: self.logger.error(*message)
 
 	def init( self ):
 		pass
@@ -53,7 +63,7 @@ class Driver(object):
 			first_line_indent = texto.parser.Parser.getIndentation(text[:text.find("\n")])
 			text_indent = texto.parser.Parser.getIndentation(text)
 			text = " " * (text_indent - first_line_indent) + text
-			return texto.main.text2htmlbody(text.decode("utf8"))
+			return texto.main.text2htmlbody(text)
 		else:
 			raise NotImplementedError
 

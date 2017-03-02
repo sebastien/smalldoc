@@ -11,7 +11,7 @@
 
 from __future__ import print_function
 
-import sugar.main
+import re, os
 from lambdafactory.interfaces import *
 from smalldoc.drivers import Driver
 from smalldoc.model   import *
@@ -21,6 +21,8 @@ Defines the driver for extracting documentation information from
 Sugar source files.
 """
 
+RE_FEATURE = re.compile("^@feature\s+sugar\s*[= ]\s*2.*$")
+
 class SugarDriver(Driver):
 	"""Parses Sugar source files and generates the smalldoc model."""
 
@@ -28,8 +30,23 @@ class SugarDriver(Driver):
 		# TODO: Parse a module
 		return self.parsePath(path)
 
+	def _parseSugar1( self, path ):
+		import sugar.main
+		self.info("Parsing Sugar1: {0}".format(path))
+		return sugar.main.run(["-clnone", "-Llib/sjs", "-Lsrc/sjs"] + ["-L" + _ for _ in self.path or ()] + [path])
+
+	def _parseSugar2( self, path ):
+		import sugar2.command
+		self.info("Parsing Sugar2: {0}".format(path))
+		return sugar2.command.run(["-clnone", "-Llib/sjs", "-Lsrc/sjs"] + ["-L" + _ for _ in self.path or ()] + [path])
+
 	def parsePath( self, path ):
-		program    = sugar.main.run(["-clnone", "-Llib/sjs", "-Lsrc/sjs"] + ["-L" + _ for _ in self.path or ()] + [path])
+		parser = self._parseSugar1
+		with open(path) as f:
+			for l in f.readlines()[0:100]:
+				if RE_FEATURE.match(l):
+					parser = self._parseSugar2
+		program = parser(path)
 		for module in program.getModules():
 			if module.isImported(): continue
 			self.onModule(module)
@@ -81,11 +98,31 @@ class SugarDriver(Driver):
 		# TODO: Add inherited slots
 		return self._setSlots(model, e)
 
-	def onValue( self, model ):
+	def onEnumeration( self, model ):
+		e = self.documenter.createElement(
+			name          = model.getName(),
+			id            = model.getAbsoluteName(),
+			type          = KEY_ENUM,
+			documentation = self._getDocumentation(model)
+		)
+		for _ in model.symbols:
+			e.setSlot(_.getName(), self.onValue(_, value=_.getName()))
+		return e
+
+	def onType( self, model ):
+		e = self.documenter.createElement(
+			name          = model.getName(),
+			id            = model.getAbsoluteName(),
+			type          = KEY_TYPE,
+			documentation = self._getDocumentation(model)
+		)
+		# TODO
+		return e
+
+	def onValue( self, model, value=None ):
 		# TODO: Add value
 		# TODO: Add source offsets
-		value = model.getDefaultValue()
-
+		value = model.getDefaultValue() if not value else value
 		return self.documenter.createElement(
 			name=model.getName(),
 			id=self._getID(model),
@@ -100,15 +137,20 @@ class SugarDriver(Driver):
 	# =========================================================================
 
 	def on( self, model ):
+		res = None
 		if isinstance(model, IFunction) or isinstance(model, IClassMethod) or isinstance(model, IMethod):
 			res = self.onFunction(model)
 		elif isinstance(model, IClass):
 			res = self.onClass(model)
 		elif isinstance(model, IAttribute):
 			res = self.onValue(model)
+		elif isinstance(model, IEnumerationType):
+			res = self.onEnumeration(model)
+		elif isinstance(model, IType):
+			res = self.onType(model)
 		elif isinstance(model, IImportOperation):
 			pass
-		else:
+		elif model:
 			raise Exception("Type not supported: {0}".format(model))
 		if res and model and model.sourceLocation:
 			s,e,p = model.sourceLocation
@@ -122,7 +164,7 @@ class SugarDriver(Driver):
 
 	def _setSlots( self, model, element ):
 		self.scopes.append(model)
-		for name, value in model.getSlots():
+		for name, value, accesor, mutator in model.getSlots():
 			element.setSlot(name, self.on(value))
 		self.scopes.pop()
 		return element
@@ -135,7 +177,9 @@ class SugarDriver(Driver):
 			return None
 
 	def _getRepresentation( self, model ):
-		if model and model.sourceLocation:
+		if not isinstance(model, IElement):
+			return str(model)
+		elif model and model.sourceLocation:
 			s,e,p = model.sourceLocation
 			return self.unindent(self.readSource(p,s,e)) if p!=-1 else None
 		else:

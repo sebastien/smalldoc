@@ -16,6 +16,8 @@ KEY_FILE            = "file"
 KEY_SECTION         = "section"
 KEY_MODULE          = "module"
 KEY_CLASS           = "class"
+KEY_ENUM            = "enum"
+KEY_TYPE            = "type"
 KEY_FUNCTION        = "function"
 KEY_METHOD          = "method"
 KEY_CONSTRUCTOR     = "class constructor"
@@ -27,7 +29,6 @@ KEY_STRING          = "string"
 KEY_NUMBER          = "number"
 KEY_MAP             = "map"
 KEY_LIST            = "list"
-KEY_VALUE           = "value"
 KEY_REFERENCE       = "reference"
 
 MOD_INHERITED       = "inherited"
@@ -106,8 +107,12 @@ class Element(object):
 
 	def setSlot( self, name, value ):
 		self.children.append((name, value))
-		value.addRelation(REL_DEFINED, self)
-		value.addRelation(REL_SLOT, name, value)
+		if value:
+			value.addRelation(REL_DEFINED, self)
+			value.addRelation(REL_SLOT, name, value)
+		else:
+			# TODO: Should probably issue a warning
+			pass
 		return self
 
 	def addChild( self, name, element ):
